@@ -48,10 +48,11 @@ class RobotPath:
         dy = p2.y - p1.y
         return math.atan2(dy, dx)
 
-    def _gen_path(self,env: RobotEnvironment, granularity=20):
+    def _gen_path(self,env: RobotEnvironment, granularity=30):
         length = env.length
-        X = np.sort(np.random.uniform(low=0, high=length, size=granularity))
-        self.points = [Point(x, math.sin(x)) for x in X]
+        #X = np.sort(np.random.uniform(low=0, high=length, size=granularity))
+        X = np.linspace(start=0, stop=length, num=granularity )
+        self.points = [Point(x, math.sin(3*x)+1) for x in X]
         self.points.insert(0,Point(0, length/2))
         self.points.append(Point(length, math.sin(length)))
         points = self.points
@@ -71,22 +72,24 @@ def generate_environment(base_length=2, scale=1):
 def _calc_robot_angle(angle1, angle2):
     pass
 
-def time_per_length(length):
-    pass
-
-
+def to_degrees(rad):
+    return 180 * rad / math.pi
 def parse_path(rays):
     """
     returns list of tuples: (starting angle, time needed to drive that angle)
     """
     angle_time_list = []
-    for i in range(len(rays)-1):
-        p1 = [rays[i].source.x, rays[i].source.y]
-        p2 = [rays[i+1].source.x, rays[i+1].source.y]
+    p1 = np.zeros(2)
+    p2 = np.zeros(2)
+    for i in range(1, len(rays)-1):
+        p1[0] = rays[i].source.x
+        p1[1]= rays[i].source.y
+        p2[0] = rays[i+1].source.x
+        p2[1]= rays[i+1].source.y
         distance = np.linalg.norm(p2-p1)
-        time_for_seg = time_per_length(distance)
-        angle = min(np.pi, 2*np.pi - (rays[i].angle + rays[i+1].angle))
-        angle_time_list.append((angle, time_for_seg))
+        #time_for_seg = time_per_length(distance)
+        angle = min(rays[i].angle - rays[i - 1].angle, np.pi - (rays[i].angle - rays[i-1].angle))
+        angle_time_list.append((to_degrees(angle), distance))
     return angle_time_list
 
 
