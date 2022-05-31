@@ -1,5 +1,5 @@
 import math
-
+import numpy as np
 
 class Point:
     def __init__(self,x ,y):
@@ -67,6 +67,18 @@ def generate_environment(base_length=2, scale=1):
     env.path = RobotPath(env)
     return env
 
+def _calc_robot_angle(angle1, angle2):
+    pass
+
+def parse_path(path:RobotPath):
+    directed_segments = []
+    for i in range(len(path.rays)-1):
+        p1 = [path.rays[i].source.x, path.rays[i].source.y]
+        p2 = [path.rays[i+1].source.x, path.rays[i+1].source.y]
+        distance = np.linalg.norm(p2-p1)
+        angle = min(np.pi, 2*np.pi - (path.rays[i].angle + path.rays[i+1].angle))
+        directed_segments.append((angle,distance))
+    return directed_segments
 
 def generate_path(env, pointA, pointB):
     """
