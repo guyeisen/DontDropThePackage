@@ -40,6 +40,7 @@ class RobotPath:
     def __init__(self, env):
         self.points = []
         self.rays = []
+        self.path_for_robot = []
         self._gen_path(env)
 
     def _calc_angle_rad(self, p1:Point, p2:Point):
@@ -56,7 +57,7 @@ class RobotPath:
         points = self.points
 
         self.rays = [Ray(points[i], self._calc_angle_rad(points[i], points[i+1])) for i in range(len(points)-1)]
-
+        self.path_for_robot = parse_path(self.rays)
 
 
 def generate_environment(base_length=2, scale=1):
@@ -70,15 +71,25 @@ def generate_environment(base_length=2, scale=1):
 def _calc_robot_angle(angle1, angle2):
     pass
 
-def parse_path(path:RobotPath):
-    directed_segments = []
-    for i in range(len(path.rays)-1):
-        p1 = [path.rays[i].source.x, path.rays[i].source.y]
-        p2 = [path.rays[i+1].source.x, path.rays[i+1].source.y]
+def time_per_length(length):
+    pass
+
+
+def parse_path(rays):
+    """
+    returns list of tuples: (starting angle, time needed to drive that angle)
+    """
+    angle_time_list = []
+    for i in range(len(rays)-1):
+        p1 = [rays[i].source.x, rays[i].source.y]
+        p2 = [rays[i+1].source.x, rays[i+1].source.y]
         distance = np.linalg.norm(p2-p1)
-        angle = min(np.pi, 2*np.pi - (path.rays[i].angle + path.rays[i+1].angle))
-        directed_segments.append((angle,distance))
-    return directed_segments
+        time_for_seg = time_per_length(distance)
+        angle = min(np.pi, 2*np.pi - (rays[i].angle + rays[i+1].angle))
+        angle_time_list.append((angle, time_for_seg))
+    return angle_time_list
+
+
 
 def generate_path(env, pointA, pointB):
     """
