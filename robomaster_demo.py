@@ -75,28 +75,41 @@ def move_half_meter_in_angle_theta(theta):
 # time.sleep(2)
 
 # -------------- rotate: --------------
+import numpy as np
 def rotate(theta):
     # speed 100 for all wheels, w1 and w4 are negative
     # timeout: 2.36 for 360 deg
     t_theta_s100 = 2.36 * (theta/360)
-    ep_chassis.drive_wheels(w1=100, w2=-100, w3=-100, w4=100, timeout=t_theta_s100) # 180 deg
-    time.sleep(t_theta_s100 + 0.1)
+    sign = 1 if theta>= 0 else -1
+    ep_chassis.drive_wheels(w1=sign*100, w2=sign*(-100), w3=sign*(-100), w4=sign*(100), timeout=sign*t_theta_s100) # 180 deg
+    time.sleep(sign*t_theta_s100 + 0.1)
 
 
 def move_straight(distance): # dis in meters
-    # 60 cm = 1.5 timeout
-    res = ep_chassis.drive_wheels(70, 70, 70, 70, timeout=1.5)
-    time.sleep(2)
+    """
+    distance is in meters.
+    """
+    scaled_distance = distance/0.6
+    # 0.60 m = 1.5 timeout
+    res = ep_chassis.drive_wheels(70, 70, 70, 70, timeout=1.5*scaled_distance)
+    time.sleep(2*scaled_distance)
     return res
 
 # --------- get path: ----------
 # env = generate_environment()
-# rays_list = env.path.rays
+# robot_path = env.path.path_for_robot
+
+
 # print([[ray.source.x, ray.source.y, ray.angle] for ray in rays_list])
 
 if __name__ == '__main__':
-    # rotate(30)
-    move_straight(0.3)
+    #rotate(60)
+    env = generate_environment()
+    robot_path = env.path.path_for_robot
+    for tup in robot_path:
+        rotate(tup[0])
+        move_straight(tup[1])
+    #move_straight(0.3)
 
 
 ep_robot.close()
