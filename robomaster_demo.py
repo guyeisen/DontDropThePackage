@@ -85,13 +85,17 @@ def rotate(theta):
     time.sleep(sign*t_theta_s100 + 0.1)
 
 
-def move_straight(distance): # dis in meters
+def move_straight(distance, speed=1): # dis in meters
     """
     distance is in meters.
     """
+
     scaled_distance = distance/0.6
     # 0.60 m = 1.5 timeout
-    res = ep_chassis.drive_wheels(70, 70, 70, 70, timeout=1.5*scaled_distance)
+    wheelspeed=70*speed
+    res = ep_chassis.drive_wheels(wheelspeed, wheelspeed, wheelspeed, wheelspeed, timeout=1.5*scaled_distance)
+    #res = ep_chassis.drive_wheels(wheelspeed, wheelspeed, wheelspeed, wheelspeed, timeout=1.5 * scaled_distance / speed)
+    #2 * scaled_distance
     time.sleep(2*scaled_distance)
     return res
 
@@ -103,11 +107,14 @@ def move_straight(distance): # dis in meters
 # print([[ray.source.x, ray.source.y, ray.angle] for ray in rays_list])
 
 if __name__ == '__main__':
-    #rotate(60)
+    rotate(360)
+
+
     env = generate_environment()
     robot_path = env.path.path_for_robot
     for tup in robot_path:
         rotate(tup[0])
+        print(f'Angle: {tup[0]}, Distance: {tup[1]}')
         move_straight(tup[1])
     #move_straight(0.3)
 
