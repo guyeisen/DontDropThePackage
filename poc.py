@@ -115,3 +115,13 @@ def rays_to_bezier(rays):
     :return: bezier curve of degree 2n
     """
     pass
+
+
+def time_per_length(length, v_const=70, t_const=1.5, u=0.6):
+    """
+    compute the time needed for Aliza to drive length meters
+    given that Aliza drives our unit distance of 0.6 meters
+    with constant velocity of 70 and 1.5 time
+    """
+    return t_const * (length/u)
+
