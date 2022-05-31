@@ -15,14 +15,15 @@ Ray_2 = Ker.Ray_2
 Vector_2 = Ker.Vector_2
 Arrangement_2 = Aos2.Arrangement_2
 Point_2 = Arrangement_2.Geometry_traits_2.Point_2
-#ipower = Aos2.Arrangement_2.Geometry_traits_2.segment
+Curv = Arrangement_2.Geometry_traits_2.Curve_2
+
 #CGALPY1 = importlib.import_module('CGALPY')
 # from CGALPY import KERNEL
 # from CGAL.CGAL_kernel import *
 
 p1 = Point_2(1,1)
 p2 = Point_2(3,3)
-
+cir  = Curv(p1, 4)
 seg = Segment_2(p1, p2)
 seg1 = Segment_2(p1, p2)
 #Ker.do_intersect(seg,seg1)
