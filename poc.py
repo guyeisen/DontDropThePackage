@@ -41,18 +41,44 @@ class RobotPath:
         self.points = []
         self.rays = []
         self.path_for_robot = []
-        self._gen_path(env)
-
+        #self._gen_path(env)
+        self._gen_arc_path_sin(env)
     def _calc_angle_rad(self, p1:Point, p2:Point):
         dx = p2.x - p1.x
         dy = p2.y - p1.y
         return math.atan2(dy, dx)
 
-    def _gen_path(self,env: RobotEnvironment, granularity=30):
+    def _gen_arc_path_sin(self, env:RobotEnvironment, granularity=20):
+        length = env.length
+        # X = np.sort(np.random.uniform(low=0, high=length, size=granularity))
+
+        X1 = np.linspace(start=0, stop=0.3, num=int(granularity/4))
+        X2 = np.linspace(start=0.74, stop=1.344, num=int(granularity/3))
+        X3 = np.linspace(start=1.79, stop=length, num=int(granularity/4))
+
+        self.points1 = [Point(x, math.sin(3 * x) / 2 + 1) for x in X1]
+        self.points2 = [Point(x, math.sin(3 * x) / 2 + 1) for x in X2]
+        self.points3 = [Point(x, math.sin(3 * x) / 2 + 1) for x in X3]
+
+        self.points1.insert(0, Point(0, length / 2))
+        self.points3.append(Point(length, math.sin(length)))
+        points1 = self.points1
+        points2 = self.points2
+        points3 = self.points3
+
+        self.rays1 = [Ray(points1[i], self._calc_angle_rad(points1[i], points1[i + 1])) for i in range(len(points1) - 1)]
+        self.rays2 = [Ray(points2[i], self._calc_angle_rad(points2[i], points2[i + 1])) for i in range(len(points2) - 1)]
+        self.rays3 = [Ray(points3[i], self._calc_angle_rad(points3[i], points3[i + 1])) for i in range(len(points3) - 1)]
+        self.path_for_robot1 = parse_path(self.rays1)
+        self.path_for_robot2 = parse_path(self.rays2)
+        self.path_for_robot3 = parse_path(self.rays3)
+
+    def _gen_path(self,env: RobotEnvironment, granularity=20):
         length = env.length
         #X = np.sort(np.random.uniform(low=0, high=length, size=granularity))
+
         X = np.linspace(start=0, stop=length, num=granularity )
-        self.points = [Point(x, math.sin(3*x)+1) for x in X]
+        self.points = [Point(x, math.sin(3*x)/2+1) for x in X]
         self.points.insert(0,Point(0, length/2))
         self.points.append(Point(length, math.sin(length)))
         points = self.points
@@ -74,6 +100,8 @@ def _calc_robot_angle(angle1, angle2):
 
 def to_degrees(rad):
     return 180 * rad / math.pi
+
+
 def parse_path(rays):
     """
     returns list of tuples: (starting angle, time needed to drive that angle)
@@ -86,13 +114,16 @@ def parse_path(rays):
         p1[1]= rays[i].source.y
         p2[0] = rays[i+1].source.x
         p2[1]= rays[i+1].source.y
+        #if p2[0]
         distance = np.linalg.norm(p2-p1)
         #time_for_seg = time_per_length(distance)
         angle = min(rays[i].angle - rays[i - 1].angle, np.pi - (rays[i].angle - rays[i-1].angle))
+        print(f'Angle: {to_degrees(angle)}, Distance: {distance}')
         angle_time_list.append((to_degrees(angle), distance))
     return angle_time_list
 
-
+env = generate_environment()
+robot_path = env.path.path_for_robot
 
 def generate_path(env, pointA, pointB):
     """
@@ -138,4 +169,5 @@ def time_per_length(length, v_const=70, t_const=1.5, u=0.6):
     with constant velocity of 70 and 1.5 time
     """
     return t_const * (length/u)
+
 

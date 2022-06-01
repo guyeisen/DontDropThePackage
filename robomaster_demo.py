@@ -79,11 +79,30 @@ import numpy as np
 def rotate(theta):
     # speed 100 for all wheels, w1 and w4 are negative
     # timeout: 2.36 for 360 deg
-    t_theta_s100 = 2.36 * (theta/360)
+    t_theta_s100 = 2.34 * (theta/360)
     sign = 1 if theta>= 0 else -1
     ep_chassis.drive_wheels(w1=sign*100, w2=sign*(-100), w3=sign*(-100), w4=sign*(100), timeout=sign*t_theta_s100) # 180 deg
-    time.sleep(sign*t_theta_s100 + 0.1)
+    time.sleep(sign*t_theta_s100 + 0.5)
 
+def rotate_with_arc_right(sign):
+    ep_chassis.drive_wheels(w1=-10*sign, w2=100*sign, w3=100*sign, w4=-10*sign, timeout=1.25)
+    time.sleep(1.3)
+
+def rotate_with_arc_left(sign):
+    ep_chassis.drive_wheels(w1=100 * sign, w2=-10 * sign, w3=-10 * sign, w4=100 * sign, timeout=1.25)
+    time.sleep(1.3)
+
+    #too fast
+     #ep_chassis.drive_wheels(w1=-10, w2=200, w3=200, w4=-10, timeout=0.6)
+    # time.sleep(0.7)
+
+def car_reverse():
+    rotate_with_arc_right(1)
+    rotate_with_arc_left(-1)
+
+def car_360():
+    car_reverse()
+    car_reverse()
 
 def move_straight(distance, speed=1): # dis in meters
     """
@@ -92,12 +111,45 @@ def move_straight(distance, speed=1): # dis in meters
 
     scaled_distance = distance/0.6
     # 0.60 m = 1.5 timeout
-    wheelspeed=70*speed
-    res = ep_chassis.drive_wheels(wheelspeed, wheelspeed, wheelspeed, wheelspeed, timeout=1.5*scaled_distance)
+    sign = 1 if distance >= 0 else -1
+    wheelspeed=70*speed*sign
+    res = ep_chassis.drive_wheels(wheelspeed, wheelspeed, wheelspeed, wheelspeed, timeout=1.5*scaled_distance*sign)
     #res = ep_chassis.drive_wheels(wheelspeed, wheelspeed, wheelspeed, wheelspeed, timeout=1.5 * scaled_distance / speed)
     #2 * scaled_distance
-    time.sleep(2*scaled_distance)
+    time.sleep(2*scaled_distance*sign)
     return res
+
+def rotate_and_go_safe(theta, distance,speed=1):
+    # speed 100 for all wheels, w1 and w4 are negative
+    # timeout: 2.36 for 360 deg
+    t_theta_s100 = 2.36 * (theta / 360)
+    sign = 1 if theta >= 0 else -1
+    ep_chassis.drive_wheels(w1=sign * 100, w2=sign * (-100), w3=sign * (-100), w4=sign * (100),
+                            timeout=sign * t_theta_s100)  # 180 deg
+    time.sleep(sign * t_theta_s100 + 0.1)
+    scaled_distance = distance / 0.6
+    # 0.60 m = 1.5 timeout
+    wheelspeed = 70 * speed
+    res = ep_chassis.drive_wheels(wheelspeed, wheelspeed, wheelspeed, wheelspeed, timeout=1.5 * scaled_distance)
+    time.sleep(2 * scaled_distance)
+def stop():
+    ep_chassis.drive_wheels(0,0,0,0)
+    time.sleep(0.5)
+
+def rotate_and_go(theta, distance,speed=1):
+    # speed 100 for all wheels, w1 and w4 are negative
+    # timeout: 2.36 for 360 deg
+    t_theta_s100 = 2.36 * (theta / 360)
+    sign = 1 if theta >= 0 else -1
+    ep_chassis.drive_wheels(w1=sign * 100, w2=sign * (-100), w3=sign * (-100), w4=sign * (100),timeout=sign*t_theta_s100)  # 180 deg
+    time.sleep(sign * t_theta_s100+0.1)
+    #stop()
+    scaled_distance = distance / 0.6
+    # 0.60 m = 1.5 timeout
+    wheelspeed = 70 * speed
+    res = ep_chassis.drive_wheels(wheelspeed, wheelspeed, wheelspeed, wheelspeed)
+    time.sleep(1.7* scaled_distance)
+    #
 
 # --------- get path: ----------
 # env = generate_environment()
@@ -105,17 +157,59 @@ def move_straight(distance, speed=1): # dis in meters
 
 
 # print([[ray.source.x, ray.source.y, ray.angle] for ray in rays_list])
+def run_path():
+    env = generate_environment()
+    robot_path1 = env.path.path_for_robot1
+    robot_path2 = env.path.path_for_robot2
+    robot_path3 = env.path.path_for_robot3
+
+    for tup in robot_path1:
+        # rotate(tup[0])
+        print(f'Angle: {tup[0]}, Distance: {tup[1]}')
+        rotate_and_go(tup[0], tup[1])
+
+    print("SIN RIGHT")
+    rotate_with_arc_right_sin(1)
+    for tup in robot_path2:
+        # rotate(tup[0])
+        print(f'Angle: {tup[0]}, Distance: {tup[1]}')
+        #rotate_and_go_safe(tup[0], tup[1])
+        rotate_and_go(tup[0], tup[1])
+        # move_straight(tup[1])
+    print("SIN LEFT")
+    rotate_with_arc_left_sin(1)
+    for tup in robot_path3:
+        # rotate(tup[0])
+        print(f'Angle: {tup[0]}, Distance: {tup[1]}')
+        #rotate_and_go_safe(tup[0], tup[1])
+        rotate_and_go(tup[0], tup[1])
+        # move_straight(tup[1])
+
+def rotate_with_arc_right_sin(sign):
+    ep_chassis.drive_wheels(w1=10 * sign, w2=70 * sign, w3=80 * sign, w4=10 * sign, timeout=1.75)
+    time.sleep(2)
+
+def rotate_with_arc_left_sin(sign):
+    ep_chassis.drive_wheels(w1=70 * sign, w2=10 * sign, w3=10 * sign, w4=80 * sign, timeout=1.75)
+    time.sleep(2)
 
 if __name__ == '__main__':
-    rotate(360)
+    #move_straight(1)
+    #rotate(-20)
+    run_path()
+    stop()
+ # rotate_with_arc_left(-1)
+    #rotate_with_arc_right_sin(1)
+    #rotate_with_arc_left_sin(1)
+    #car_reverse()
+   #car_360()
+    # rotate(5)
+   #  run_path()
+    # rotate(120)
+    # run_path()
+    # rotate(120)
 
 
-    env = generate_environment()
-    robot_path = env.path.path_for_robot
-    for tup in robot_path:
-        rotate(tup[0])
-        print(f'Angle: {tup[0]}, Distance: {tup[1]}')
-        move_straight(tup[1])
     #move_straight(0.3)
 
 
