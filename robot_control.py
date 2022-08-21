@@ -24,6 +24,10 @@ def move_straight(distance, speed=1):
     time.sleep(timeout)
     return res
 
+def get_acceleration(speed, radius):
+    """returns the acceleration of the movement"""
+    pass #TODO
+
 ROBOT_WIDTH = 0.240
 ROBOT_LENGTH = 0.295
 WHEEL_WITDH = 0.04
@@ -47,6 +51,7 @@ def move_straight_exact(distance, speed=0.5):
 CONST_A = 0.145
 CONST_B = 0.1025
 def move_on_circular_arc(R, speed): ####CURENTLY WORKS ONLY FOR ABOUT 60CM.
+    #TODO FIX THIS
     R = 0.6
     #1.05 for 0.3m
     #3.05 is 0.6
