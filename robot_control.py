@@ -11,6 +11,50 @@ from robomaster import led
 # ep_robot.initialize()
 
 # ---------- move_straight: ---------------
+
+
+class RobotControl:
+    def __init__(self):
+        self.ep_robot = robot.Robot()
+        # sanity check:
+        sdk_version = version.__version__
+        print("sdk version:", sdk_version)
+        # init:
+        # conn_type: 'ap'=WiFi direct, 'sta'=networking. proto_type:'tcp'/'udp'
+        self.ep_robot.initialize(conn_type='ap',proto_type='tcp')
+        # ------------------------- Obtain module objects: ----------------------------
+        self.ep_chassis = self.ep_robot.chassis
+        self.ep_led = self.ep_robot.led
+
+        # ----------- set led to purple: ----------
+        self.ep_led.set_led(comp=led.COMP_ALL, r=60, g=0, b=60, effect=led.EFFECT_ON)
+
+    def move_straight_exact(self, distance, speed=0.5):
+        """distance is in meters
+            speed in m/s """
+        direction = 1 if distance >= 0 else -1
+        t = math.fabs(distance / speed)
+        rpm = direction * speed_to_rpm(speed)
+        print(f"running for {t} sec. rpm is {rpm}")
+        self.ep_chassis.drive_wheels(w1=rpm, w2=rpm, w3=rpm, w4=rpm, timeout=t)
+        time.sleep(t)
+
+    def rotate_and_go(self, theta, distance, speed=0.3):
+        # speed 100 for all wheels, w1 and w4 are negative
+        # timeout: 2.36 for 360 deg
+        t_theta_s100 = 2.36 * (theta / 360)
+        sign = 1 if theta >= 0 else -1
+        self.ep_chassis.drive_wheels(w1=sign * 100, w2=sign * (-100), w3=sign * (-100), w4=sign * (100),
+                                timeout=sign * t_theta_s100)  # 180 deg
+        time.sleep(sign * t_theta_s100)
+        # stop()
+        self.move_straight_exact(distance, speed)
+        # scaled_distance = distance / 0.6
+        # # 0.60 m = 1.5 timeout
+        # wheelspeed = 70 * speed
+        # res = ep_chassis.drive_wheels(wheelspeed, wheelspeed, wheelspeed, wheelspeed)
+        # time.sleep(1.7* scaled_distance)
+
 def move_straight(distance, speed=1):
     """
     distance is in cm.
@@ -37,15 +81,7 @@ def speed_to_rpm(speed):
     """meters per second to rpm"""
     return 60*speed/(2*math.pi*WHEEL_RADIUS)
 
-def move_straight_exact(distance, speed=0.5):
-    """distance is in meters
-        speed in m/s """
-    direction = 1 if distance >= 0 else -1
-    t = math.fabs(distance/speed)
-    rpm = direction*speed_to_rpm(speed)
-    print(f"running for {t} sec. rpm is {rpm}")
-    ep_chassis.drive_wheels(w1=rpm, w2=rpm, w3=rpm, w4=rpm, timeout=t)
-    time.sleep(t)
+
 
 
 CONST_A = 0.145
@@ -142,6 +178,17 @@ def slalum():
     move_straight(30)
     stop()
 
+
+
+
+def rotate_with_arc_right_sin(sign):
+    ep_chassis.drive_wheels(w1=10 * sign, w2=70 * sign, w3=80 * sign, w4=10 * sign, timeout=1.75)
+    time.sleep(2)
+
+def rotate_with_arc_left_sin(sign):
+    ep_chassis.drive_wheels(w1=70 * sign, w2=10 * sign, w3=10 * sign, w4=80 * sign, timeout=1.75)
+    time.sleep(2)
+
 if __name__ == '__main__':
     ep_robot = robot.Robot()
 
@@ -212,9 +259,9 @@ if __name__ == '__main__':
     #big_circle_theta_deg(60)
     #move_straight_exact(1,0.3)
     #for i in range(5):
-    move_on_circular_arc(0.6,0.3)
+    #move_on_circular_arc(0.6,0.3)
     #move_circle_otherAPI(0.5,0.5)
-    stop()
+    #stop()
     ##move_on_circular_arc(0.3, 0.3)
     #stop()
     #slalum()

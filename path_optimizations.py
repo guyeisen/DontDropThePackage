@@ -4,3 +4,6 @@ def douglas_poiker(points):
     """returns optimaized list of Point_2 according to douglas poiker algorithm"""
     #TODO
     pass
+
+def optimize_path(points):
+    pass
