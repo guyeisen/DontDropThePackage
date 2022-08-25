@@ -1,65 +1,72 @@
-import importlib.util
-import json
-import math
-from inspect import isclass
-
 import os
+import importlib.util
 import sys
 import json
 import importlib.util
 from inspect import isclass
+from PyQt5 import QtWidgets
+from CGALPY.Ker import Ray_2, Direction_2
 
-from CGALPY.Ker import Ray_2, Direction_2, Vector_2
-from discopygal.gui import Worker
 from robot_control import *
-from discopygal.bindings import Segment_2, Point_2
+from discopygal.bindings import Point_2
 
-from discopygal.solvers import Robot, RobotDisc, RobotPolygon, RobotRod
-from discopygal.solvers import Obstacle, ObstacleDisc, ObstaclePolygon, Scene
-from discopygal.solvers import PathPoint, Path, PathCollection, Solver
-
-
-from discopygal.solvers.metrics import Metric, Metric_Euclidean
-from discopygal.solvers.nearest_neighbors import NearestNeighbors, NearestNeighbors_sklearn
-from discopygal.solvers.samplers import Sampler, Sampler_Uniform
-from discopygal.geometry_utils import collision_detection, conversions
-
-from path_optimizations import optimize_path
+from discopygal.solvers import SceneDrawer
+from discopygal.solvers import Scene
+from discopygal.solvers import Solver
 
 
-class EnviromentConfigurations:
+from solver_viewer_main import SolverViewerGUI
+
+DEFAULT_SCENE = "testscene.json"
+
+class EnviromentConfigurations():
     def __init__(self):
-        self.writer = None
-        self.discopygal_scene = Scene()
-        self.scene_path = ""
+        self.app = QtWidgets.QApplication(sys.argv)
+        self.gui = SolverViewerGUI()
+        self.gui.solve()
+
+        #self.mygui = SolverViewerGUI()
+        # self.path_edges = []
+        # self.path_vertices = []
+        # self.writer = None
+        # self.discopygal_scene = Scene()
+        # self.scene_path = ""
+
+        # self.paths = None
+        # # Setup solver
+        # self.solver_class = None
+        # #self.load_solver()
+        # self.solver_graph = None
+        # self.solver_arrangement = None
+        # self.solver_graph_vertices = [] # gui
+        # self.solver_graph_edges = [] # gui
+        #self.execute_defaults()
+
+
+
+    def execute_defaults(self):
+        self.gui.mainWindow.show()
         self.load_scene()
-        self.paths = None
-        # Setup solver
-        self.solver_class = None
-        #self.load_solver()
-        self.solver_graph = None
-        self.solver_arrangement = None
-        self.solver_graph_vertices = [] # gui
-        self.solver_graph_edges = [] # gui
         self.solver_from_file()
-        self.solve()
+        self.gui.solve()#############was without gui,
+        self.gui.toggle_paths()
+
 
     def load_scene(self):
         """
-        Load a scene.
+        Load default scene.
         """
-        scene_name = "testscene.json"
-        with open(scene_name, 'r') as fp:
+        with open(DEFAULT_SCENE, 'r') as fp:
             d = json.load(fp)
-        self.discopygal_scene = Scene.from_dict(d)
+        self.gui.discopygal_scene = Scene.from_dict(d)
+        scene_drawer = SceneDrawer(self.gui, self.gui.discopygal_scene)
+        scene_drawer.draw_scene()
         self.clear_paths()
 
 
     def clear_paths(self):
         pass
 
-    def load_solver(self):
-        pass
 
     def get_solver_args(self):
         """
@@ -79,10 +86,10 @@ class EnviromentConfigurations:
         solver_args = self.get_solver_args()
         #solver.set_verbose(self.writer)
         solver = self.solver_class.from_arguments(solver_args)
-        solver.load_scene(self.discopygal_scene)
-        self.paths = solver.solve()
-        self.solver_graph = solver.get_graph()
-        self.solver_arrangement = solver.get_arrangement()
+        solver.load_scene(self.gui.discopygal_scene)
+        self.gui.paths = solver.solve()
+        self.gui.solver_graph = solver.get_graph()
+        self.gui.solver_arrangement = solver.get_arrangement()
 
     def solver_from_file(self):
         """
@@ -113,6 +120,7 @@ class EnviromentConfigurations:
             print("self.solver_class is None")
             return
         self.solve_thread()
+
 
 
 
@@ -194,8 +202,26 @@ def run_path(control: RobotControl, path):
 
 
 if __name__ == '__main__':
-    control = RobotControl()
-    env = EnviromentConfigurations()
-    robot_path = RobotPath(env.paths.paths[env.discopygal_scene.robots[0]].points)
+    #control = RobotControl()
+    #control.move_circ_2(R=1,speed=0.5,alpha=0)
+    #control.begin_slowly_to_speed(0.3)
+    #control.ep_chassis.drive_wheels(w1=60, w2=60, w3=60, w4=60, timeout=60)
+    #time.sleep(60)
 
-    run_path(control, robot_path.path_for_robot)
+    #### --------- RUN THE PRM PATH -----------####
+    env = EnviromentConfigurations()
+    env.gui.mainWindow.show()
+
+
+    while(env.gui.paths == None):
+        print(f"Waiting for path to be created...")
+        pass
+    print("Path created!")
+    robot_path = RobotPath(env.gui.paths.paths[env.gui.discopygal_scene.robots[0]].points)
+
+    #run_path(control, robot_path.path_for_robot)
+    # ----------- set led to purple: ----------
+    #control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=10, b=10, effect=led.EFFECT_ON)
+    #control.ep_robot.close()
+
+    sys.exit(env.app.exec_())
