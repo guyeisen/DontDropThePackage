@@ -24,6 +24,7 @@ class EnviromentConfigurations():
         self.app = QtWidgets.QApplication(sys.argv)
         self.gui = SolverViewerGUI()
         self.gui.solve()
+        self.gui.toggle_paths()
 
         #self.mygui = SolverViewerGUI()
         # self.path_edges = []
@@ -152,9 +153,9 @@ class RobotPath:
         #robot_path = self.points
         #self.points[0].location.x().to_double()
         #Ray_2(self.points[0].location, Direction_2(self.points[0].location.x(),self.points[0].location.y()))
-
+        print(f"Calculated {len(self.points)} points")
         self.rays = [Ray_2(self.points[i].location, self._get_Direction_2(self.points[i].location, self.points[i + 1].location)) for i in range(len(self.points) - 1)]
-        return parse_path(self.rays)
+        return parse_path(self.rays, self.points[len(self.points)-1].location)
 
 def _calc_angle_rad_fromDirection(direction: Direction_2):
     return math.atan2(direction.dy().to_double(), direction.dx().to_double())
@@ -164,26 +165,49 @@ def to_degrees(rad):
     return 180 * rad / math.pi
 
 
-def parse_path(rays: [Ray_2]):
+def parse_path(rays: [Ray_2], last_point: Point_2):
     """
     returns list of tuples: (starting angle, distance)
+                    (p2)
+                    /  \
+    prev_distance  /    \ curr_distance
+                  /      \
+               (p1)------(p3)
     """
     angle_distance_list = []
+    p0 = np.zeros(2)
     p1 = np.zeros(2)
     p2 = np.zeros(2)
+    print(f"Calculated {len(rays)} rays")
     for i in range(1, len(rays)-1):
+        p0[0] = rays[i-1].source().x().to_double()
+        p0[1]= rays[i-1].source().y().to_double()
         p1[0] = rays[i].source().x().to_double()
         p1[1]= rays[i].source().y().to_double()
-        p2[0] = rays[i+1].source().x().to_double()
-        p2[1]= rays[i+1].source().y().to_double()
+        p2[0] = rays[i + 1].source().x().to_double()
+        p2[1] = rays[i + 1].source().y().to_double()
         #if p2[0]
-        distance = np.linalg.norm(p2-p1)
+        prev_distance = np.linalg.norm(p1-p0)
+        curr_distance = np.linalg.norm(p2-p1)
         #time_for_seg = time_per_length(distance)
         angle1 = _calc_angle_rad_fromDirection(rays[i].direction())
         angle0 = _calc_angle_rad_fromDirection(rays[i - 1].direction())
         angle = min(angle1 - angle0, np.pi - (angle1 - angle0))
-        print(f'Angle: {to_degrees(angle)}, Distance: {distance}')
-        angle_distance_list.append((to_degrees(angle), distance))
+        if i == 1:#first iteration
+            print(f'First Angle: {to_degrees(angle0)}, Distance: {prev_distance}')
+            angle_distance_list.append((to_degrees(angle0),prev_distance))
+        print(f'Angle: {to_degrees(angle)}, Distance: {curr_distance}')
+
+        angle_distance_list.append((to_degrees(angle), curr_distance))
+        if i==len(rays)-2:
+            last_p = np.zeros(2)
+            last_p[0] = last_point.x().to_double()
+            last_p[1] = last_point.y().to_double()
+            distance = np.linalg.norm(last_p-p2)
+            angle2 = _calc_angle_rad_fromDirection(rays[i+1].direction())
+            angle = min(angle2 - angle1, np.pi - (angle2 - angle1))
+            print(f'Last Angle: {to_degrees(angle)}, Distance: {distance}')
+            angle_distance_list.append((to_degrees(angle), distance))
     return angle_distance_list
 
 
@@ -202,7 +226,7 @@ def run_path(control: RobotControl, path):
 
 
 if __name__ == '__main__':
-    #control = RobotControl()
+    control = RobotControl()
     #control.move_circ_2(R=1,speed=0.5,alpha=0)
     #control.begin_slowly_to_speed(0.3)
     #control.ep_chassis.drive_wheels(w1=60, w2=60, w3=60, w4=60, timeout=60)
@@ -217,11 +241,12 @@ if __name__ == '__main__':
         print(f"Waiting for path to be created...")
         pass
     print("Path created!")
+    env.gui.toggle_paths()
     robot_path = RobotPath(env.gui.paths.paths[env.gui.discopygal_scene.robots[0]].points)
 
-    #run_path(control, robot_path.path_for_robot)
+    run_path(control, robot_path.path_for_robot)
     # ----------- set led to purple: ----------
-    #control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=10, b=10, effect=led.EFFECT_ON)
-    #control.ep_robot.close()
+    control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=10, b=10, effect=led.EFFECT_ON)
+    control.ep_robot.close()
 
     sys.exit(env.app.exec_())

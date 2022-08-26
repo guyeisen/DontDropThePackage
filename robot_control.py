@@ -164,7 +164,7 @@ def get_acceleration(speed, radius):
 ROBOT_WIDTH = 0.240
 ROBOT_LENGTH = 0.295
 WHEEL_WITDH = 0.04
-WHEEL_RADIUS = 0.095/2
+WHEEL_RADIUS = 0.1/2
 
 def speed_to_rpm(speed):
     """meters per second to rpm"""

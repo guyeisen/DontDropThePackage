@@ -21,7 +21,8 @@ from solver_viewer_gui import Ui_MainWindow, Ui_dialog, About_Dialog
 
 WINDOW_TITLE = "DiscoPygal Solver Viewer"
 DEFAULT_ZOOM = 30
-
+DEFAULT_SCENE = "small_scene.json"
+DEFAULT_SOLVER = "prm.py"
 
 def get_available_solvers():
     """
@@ -35,7 +36,7 @@ def get_available_solvers():
 
 
 class SolverDialog(Ui_dialog):
-    def __init__(self, gui, dialog):
+    def __init__(self, gui, dialog, default=False):
         super().__init__()
         self.gui = gui  # pointer to parent gui
         self.dialog = dialog
@@ -45,14 +46,18 @@ class SolverDialog(Ui_dialog):
         self.selectButton.clicked.connect(self.choose_solver)
         self.browseButton.clicked.connect(self.solver_from_file)
 
-    def solver_from_file(self):
+    def solver_from_file(self, default=False):
         """
         Choose a solver from a file
         """
-        path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self.dialog, 'Load File')
-        if path == '':
-            return
+        if default:
+            print(f"Getting default solver: {DEFAULT_SOLVER}")
+            path = DEFAULT_SOLVER
+        else:
+            path, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self.dialog, 'Load File')
+            if path == '':
+                return
         try:
             spec = importlib.util.spec_from_file_location(path, path)
             module = importlib.util.module_from_spec(spec)
@@ -61,13 +66,16 @@ class SolverDialog(Ui_dialog):
             for obj_name in dir(module):
                 obj = getattr(module, obj_name)
                 if isclass(obj) and issubclass(obj, Solver) and obj_name != "Solver":
+                    print(f"Found solver: {obj_name}")
                     globals()[obj_name] = obj
                     cnt += 1
-            self.update_combo_box()
+                    break
+            self.update_combo_box(default=default, default_text=obj_name)
             msgbox = QtWidgets.QMessageBox(
                 QtWidgets.QMessageBox.Icon.Information, 
                 "Import solvers", "Successfully import {} solvers from {}.".format(cnt, path))
-            msgbox.exec()
+            if not default:
+                msgbox.exec()
         except Exception as e:
             msgbox = QtWidgets.QMessageBox(
                 QtWidgets.QMessageBox.Icon.Critical, 
@@ -75,13 +83,17 @@ class SolverDialog(Ui_dialog):
             msgbox.exec()
 
     def choose_solver(self):
+        print(f"Choosing solver: {self.solverComboBox.currentText()}")
         self.gui.select_solver(self.solverComboBox.currentText())
         self.dialog.close()
 
-    def update_combo_box(self):
+    def update_combo_box(self, default=False, default_text=None):
         items = ["Select a solver..."] + get_available_solvers()
         self.solverComboBox.clear()
         self.solverComboBox.addItems(items)
+        if default:
+            self.solverComboBox.setCurrentText(default_text)
+            print(f"Set current text of solver dialog to {default_text}")
 
 
 class SolverViewerGUI(Ui_MainWindow):
@@ -105,6 +117,7 @@ class SolverViewerGUI(Ui_MainWindow):
         self.actionClear.triggered.connect(self.clear)
 
         # Setup solver
+        self.solver_dialog = None
         self.solver_class = None
         self.actionOpenSolver.triggered.connect(self.load_solver)
         self.actionOpen_Solver.triggered.connect(self.load_solver)
@@ -136,6 +149,17 @@ class SolverViewerGUI(Ui_MainWindow):
         self.actionAbout.triggered.connect(self.about_dialog)
         self.actionQuit.triggered.connect(lambda: sys.exit(0))
         self.actionVerify.triggered.connect(self.verify_paths)
+
+        self.run_default_scene()
+
+
+    def run_default_scene(self):
+        self.load_scene(default=True)
+        self.load_solver(default=True)
+        self.solver_dialog.solver_from_file(default=True)
+        self.solver_dialog.choose_solver()
+        #self.solve()
+
 
     def verify_paths(self):
         """
@@ -390,7 +414,7 @@ class SolverViewerGUI(Ui_MainWindow):
         """
         self.toolBar.setEnabled(True)
 
-    def select_solver(self, solver_name):
+    def select_solver(self, solver_name, default=False):
         """
         Set the selected solver.
         Also generate dynamically the GUI elements corresponding to the solver's arguments.
@@ -441,25 +465,29 @@ class SolverViewerGUI(Ui_MainWindow):
         else:
             self.sceneDetailsEdit.setPlainText('NO DETAILS')
 
-    def load_solver(self):
+    def load_solver(self, default=False):
         """
         Open the "load solver" dialog
         """
         dialog = QtWidgets.QDialog()
-        dialog.ui = SolverDialog(self, dialog)
+        dialog.ui = SolverDialog(self, dialog, default=default)
         dialog.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        dialog.setWindowTitle('Open Solver...')
-        dialog.exec_()
+        self.solver_dialog = dialog.ui
+        if not default:
+            dialog.setWindowTitle('Open Solver...')
+            dialog.exec_()
 
-    def load_scene(self):
+    def load_scene(self, default=False):
         """
         Load a scene.
         """
-        name, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self.mainWindow, 'Load File')
-        if name == '':
-            return
-
+        if not default:
+            name, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self.mainWindow, 'Load File')
+            if name == '':
+                return
+        else:
+            name = DEFAULT_SCENE
         self.clear()
 
         with open(name, 'r') as fp:
