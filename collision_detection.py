@@ -1,9 +1,12 @@
 import math
 
+from discopygal.bindings import TPoint, Face, Aos2, X_monotone_curve_2, Arrangement_2, Arr_trapezoid_ric_point_location
 from discopygal.solvers import Obstacle, ObstacleDisc, ObstaclePolygon, Robot, RobotDisc, RobotPolygon, RobotRod
 
-from ..bindings import *
-from . import transform
+# from ..bindings import *
+# from . import transform
+
+from discopygal.bindings import *
 
 EPS = 0.001
 
@@ -65,6 +68,9 @@ class ObjectCollisionDetection(object):
                 if obj.data() > 0:
                     return False
         return True
+
+    def is_arc_valid(self, circle, angle):
+        pass # todo - implement (maybe insert source and target point instead of angle)
 
     def build_cspace(self):
         """
