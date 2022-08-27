@@ -1,6 +1,10 @@
 import time
 import math
+from typing import List
+
 import numpy as np
+
+from path_optimizations import PathSection
 from robomaster import robot
 from robomaster import version
 from robomaster import led
@@ -29,6 +33,14 @@ class RobotControl:
         # ----------- set led to purple: ----------
         self.ep_led.set_led(comp=led.COMP_ALL, r=60, g=0, b=60, effect=led.EFFECT_ON)
 
+    def run_path(self,path: List[PathSection]):
+        """runs the given path"""
+        for section in path:
+            if section.isCircle:
+                self.move_circ_2()
+            if not section.isCircle:
+                self.move_straight_exact()
+
 
     def drive_rpm(self, w1, w2, w3, w4, timeout, should_stop=True,prevent_stop_factor=0.9):
         print(f"rpm: {np.average(w1,w2,w3,w4)} for {timeout}s")
@@ -49,7 +61,7 @@ class RobotControl:
             time_for_action += t
         return time_for_action
 
-    def glide_smoothly(self, start_speed, end_speed, distance, intervals=20):
+    def glide_smoothly(self, start_speed, end_speed, distance, intervals=20, should_stop=False):
         """
         glide through start_speed (m/s) to end_speed (m/s) whithin distance(m)
         intervals are the number of speed changes the robot will make
@@ -63,7 +75,7 @@ class RobotControl:
             rpm = speed_to_rpm(s)
             t = distance/(intervals*s)
             if i == len(speeds) - 1:
-                self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm,timeout=t,should_stop=False)
+                self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm,timeout=t,should_stop=should_stop)
             else:
                 self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm,timeout=t)
 

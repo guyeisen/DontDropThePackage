@@ -168,11 +168,11 @@ def to_degrees(rad):
 def parse_path(rays: [Ray_2], last_point: Point_2):
     """
     returns list of tuples: (starting angle, distance)
-                    (p2)
+                    (p1)
                     /  \
     prev_distance  /    \ curr_distance
                   /      \
-               (p1)------(p3)
+               (p0)      (p2)
     """
     angle_distance_list = []
     p0 = np.zeros(2)
