@@ -16,7 +16,7 @@ from discopygal.solvers import SceneDrawer
 from discopygal.solvers import Scene
 from discopygal.solvers import Solver
 
-from smooth_path import smooth_path
+from smooth_path import smooth_path, angle_to_point
 from solver_viewer_main import SolverViewerGUI
 
 DEFAULT_SCENE = "testscene.json"
@@ -251,7 +251,12 @@ if __name__ == '__main__':
     smooth_path = smooth_path(path, collision_detector)
 
     # todo - add all arcs to scene:
-    # env.gui.add_circle_segment()
+    for s in smooth_path:
+        if str(type(s)) == "<class 'CGALPY.Ker.Circle_2'>":
+            r = math.sqrt(s.squared_radius().to_double())
+            center = s.center()
+            # stat_angle =
+            env.gui.add_circle_segment(r, center.x().to_double(), center.y().to_double(), start_angle=math.pi, end_angle=2*math.pi, clockwise=True)
 
     env.gui.mainWindow.show()
 

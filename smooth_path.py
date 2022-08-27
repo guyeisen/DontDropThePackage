@@ -68,6 +68,15 @@ def get_arc_source_and_target(p1, p2, p3):
 
     return source, target
 
+# ---------------------------- angle_to_point: ---------------------------------
+
+def angle_to_point(circle, point):
+    center = circle.center()
+    xc = center.x().to_double()
+    yc = center.y()
+    xp = point.x()
+    yp = point.y()
+
 # ---------------------------- get_circle: -------------------------------------
 
 ''' return a circle that is tangent to segments p1-p2 and p2-p3 at some points that are closer then p1 and p3 (or equal to them)'''
