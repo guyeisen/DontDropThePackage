@@ -10,8 +10,8 @@ from discopygal.solvers import PathPoint, Path, PathCollection, Solver
 from discopygal.solvers.metrics import Metric, Metric_Euclidean
 from discopygal.solvers.nearest_neighbors import NearestNeighbors, NearestNeighbors_sklearn
 from discopygal.solvers.samplers import Sampler, Sampler_Uniform
-from discopygal.geometry_utils import collision_detection, conversions
-
+from discopygal.geometry_utils import conversions
+import collision_detection
 
 class PRM(Solver):
     """
