@@ -5,16 +5,18 @@ import json
 import importlib.util
 from inspect import isclass
 from PyQt5 import QtWidgets
-from CGALPY.Ker import Ray_2, Direction_2
-
+# from CGALPY.Ker import Ray_2, Direction_2
+from collision_detection import ObjectCollisionDetection
 from robot_control import *
 from discopygal.bindings import Point_2
+from discopygal.bindings import *
+
 
 from discopygal.solvers import SceneDrawer
 from discopygal.solvers import Scene
 from discopygal.solvers import Solver
 
-
+from smooth_path import smooth_path
 from solver_viewer_main import SolverViewerGUI
 
 DEFAULT_SCENE = "testscene.json"
@@ -24,7 +26,7 @@ class EnviromentConfigurations():
         self.app = QtWidgets.QApplication(sys.argv)
         self.gui = SolverViewerGUI()
         self.gui.solve()
-        self.gui.toggle_paths()
+        # self.gui.toggle_paths()
 
         #self.mygui = SolverViewerGUI()
         # self.path_edges = []
@@ -154,7 +156,7 @@ class RobotPath:
         #self.points[0].location.x().to_double()
         #Ray_2(self.points[0].location, Direction_2(self.points[0].location.x(),self.points[0].location.y()))
         print(f"Calculated {len(self.points)} points")
-        self.rays = [Ray_2(self.points[i].location, self._get_Direction_2(self.points[i].location, self.points[i + 1].location)) for i in range(len(self.points) - 1)]
+        self.rays = [Ker.Ray_2(self.points[i].location, self._get_Direction_2(self.points[i].location, self.points[i + 1].location)) for i in range(len(self.points) - 1)]
         return parse_path(self.rays, self.points[len(self.points)-1].location)
 
 def _calc_angle_rad_fromDirection(direction: Direction_2):
@@ -165,7 +167,7 @@ def to_degrees(rad):
     return 180 * rad / math.pi
 
 
-def parse_path(rays: [Ray_2], last_point: Point_2):
+def parse_path(rays: [Ker.Ray_2], last_point: Point_2):
     """
     returns list of tuples: (starting angle, distance)
                     (p1)
@@ -226,7 +228,7 @@ def run_path(control: RobotControl, path):
 
 
 if __name__ == '__main__':
-    control = RobotControl()
+    # control = RobotControl()
     #control.move_circ_2(R=1,speed=0.5,alpha=0)
     #control.begin_slowly_to_speed(0.3)
     #control.ep_chassis.drive_wheels(w1=60, w2=60, w3=60, w4=60, timeout=60)
@@ -234,19 +236,30 @@ if __name__ == '__main__':
 
     #### --------- RUN THE PRM PATH -----------####
     env = EnviromentConfigurations()
-    env.gui.mainWindow.show()
-
 
     while(env.gui.paths == None):
         print(f"Waiting for path to be created...")
         pass
     print("Path created!")
     env.gui.toggle_paths()
-    robot_path = RobotPath(env.gui.paths.paths[env.gui.discopygal_scene.robots[0]].points)
 
-    run_path(control, robot_path.path_for_robot)
-    # ----------- set led to purple: ----------
-    control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=10, b=10, effect=led.EFFECT_ON)
-    control.ep_robot.close()
+    robot = env.gui.discopygal_scene.robots[0]
+    path = env.gui.paths.paths[robot]
+    prm = env.gui.solver
+    collision_detector : ObjectCollisionDetection = prm.collision_detection[robot]
+
+    smooth_path = smooth_path(path, collision_detector)
+
+    # todo - add all arcs to scene:
+    # env.gui.add_circle_segment()
+
+    env.gui.mainWindow.show()
+
+    # ------------- move robot: ---------
+    # robot_path = RobotPath(env.gui.paths.paths[robot].points)
+    # run_path(control, robot_path.path_for_robot)
+    # # ----------- set led to purple: ----------
+    # control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=10, b=10, effect=led.EFFECT_ON)
+    # control.ep_robot.close()
 
     sys.exit(env.app.exec_())

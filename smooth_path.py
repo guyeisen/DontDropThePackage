@@ -112,36 +112,35 @@ def get_circle(p1, p2, p3):
 
 # ---------------------------------- smooth_path: ---------------------------------------------------
 
-def smooth_path(path_collection, collision_detector):
+def smooth_path(path, collision_detector):
     ''' returns a list of segments and circles alternately.
     the circles forms circular arcs that starts/ends at the midpoint of the original segments at most '''
     res = []
-    paths_dict = path_collection.paths
-    for robot, path in paths_dict:
-        points = path.points # type points: list<class:`PathPoint`>
-        prev_point = points[0].location
-        for i in range(len(points)-3):
-            p1 = points[i].location
-            p2 = points[i+1].location
-            p3 = points[i+2].location
 
-            midpoint_seg1 = Ker.midpoint(p1, p2)
-            midpoint_seg2 = Ker.midpoint(p2, p3)
+    points = path.points # type points: list<class:`PathPoint`>
+    prev_point = points[0].location
+    for i in range(len(points)-3):
+        p1 = points[i].location
+        p2 = points[i+1].location
+        p3 = points[i+2].location
 
-            c = get_circle(midpoint_seg1, p2, midpoint_seg2)
-            arc_source, arc_target = get_arc_source_and_target(midpoint_seg1, p2, midpoint_seg2)
-                arc_angle = (2 * math.pi) - get_angle(p1, p2, p3)
+        midpoint_seg1 = Ker.midpoint(p1, p2)
+        midpoint_seg2 = Ker.midpoint(p2, p3)
 
-            if collision_detector.is_arc_valid(c, arc_angle):
-                res.append(Ker.segment_2(prev_point, arc_source))
-                res.append(c)
-            else:
-                # todo - find the largest circle that don't collide by binary search
-                # midpoint_seg1 = Ker.midpoint(midpoint_seg1, p2)
-                # midpoint_seg2 = Ker.midpoint(p2, midpoint_seg2)
+        c = get_circle(midpoint_seg1, p2, midpoint_seg2)
+        arc_source, arc_target = get_arc_source_and_target(midpoint_seg1, p2, midpoint_seg2)
+        arc_angle = (2 * math.pi) - get_angle(p1, p2, p3)
 
-            prev_point = arc_target
+        if collision_detector.is_arc_valid(c,arc_source, arc_target):
+            res.append(Ker.Segment_2(prev_point, arc_source))
+            res.append(c)
+        else:
+            pass
+            # todo - find the largest circle that don't collide by binary search
+            # midpoint_seg1 = Ker.midpoint(midpoint_seg1, p2)
+            # midpoint_seg2 = Ker.midpoint(p2, midpoint_seg2)
 
+        prev_point = arc_target
     return res
 
 

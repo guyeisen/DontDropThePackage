@@ -108,15 +108,13 @@ def move_straight(distance, speed=1): # dis in meters
     """
     distance is in meters.
     """
-
     scaled_distance = distance/0.6
     # 0.60 m = 1.5 timeout
     sign = 1 if distance >= 0 else -1
-    wheelspeed=70*speed*sign
-    res = ep_chassis.drive_wheels(wheelspeed, wheelspeed, wheelspeed, wheelspeed, timeout=1.5*scaled_distance*sign)
-    #res = ep_chassis.drive_wheels(wheelspeed, wheelspeed, wheelspeed, wheelspeed, timeout=1.5 * scaled_distance / speed)
-    #2 * scaled_distance
-    time.sleep(2*scaled_distance*sign)
+    wheelspeed = 70*speed*sign
+    timeout = 1.5 * scaled_distance * sign
+    res = ep_chassis.drive_wheels(wheelspeed, wheelspeed, wheelspeed, wheelspeed, timeout)
+    time.sleep(timeout)
     return res
 
 def rotate_and_go_safe(theta, distance,speed=1):
@@ -132,6 +130,8 @@ def rotate_and_go_safe(theta, distance,speed=1):
     wheelspeed = 70 * speed
     res = ep_chassis.drive_wheels(wheelspeed, wheelspeed, wheelspeed, wheelspeed, timeout=1.5 * scaled_distance)
     time.sleep(2 * scaled_distance)
+
+
 def stop():
     ep_chassis.drive_wheels(0,0,0,0)
     time.sleep(0.5)
@@ -193,11 +193,11 @@ def rotate_with_arc_left_sin(sign):
     ep_chassis.drive_wheels(w1=70 * sign, w2=10 * sign, w3=10 * sign, w4=80 * sign, timeout=1.75)
     time.sleep(2)
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     #move_straight(1)
     #rotate(-20)
-    run_path()
-    stop()
+    # run_path()
+    # stop()
  # rotate_with_arc_left(-1)
     #rotate_with_arc_right_sin(1)
     #rotate_with_arc_left_sin(1)

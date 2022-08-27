@@ -5,6 +5,7 @@ from discopygal.solvers import Obstacle, ObstacleDisc, ObstaclePolygon, Robot, R
 
 # from ..bindings import *
 # from . import transform
+from discopygal.geometry_utils import transform
 
 from discopygal.bindings import *
 
@@ -69,8 +70,18 @@ class ObjectCollisionDetection(object):
                     return False
         return True
 
-    def is_arc_valid(self, circle, angle):
-        pass # todo - implement (maybe insert source and target point instead of angle)
+    def is_arc_valid(self, circle, source, target):
+        res = []
+        # if edge.is_degenerate():
+        #     return True
+        Aos2.zone(self.cspace, X_monotone_curve_2(circle, TPoint(source.x(), source.y()), TPoint(target.x(), target.y()), circle.orientation()), res, self.point_location)
+        for obj in res:
+            if type(obj) == Face:
+                if obj.data() > 0:
+                    return False
+        return True
+
+        return True # todo - implement (maybe insert source and target point instead of angle)
 
     def build_cspace(self):
         """
@@ -386,3 +397,5 @@ def collide_disc_with_rod(center, r, x, y, a, length):
             # If we intersect with something other than a face then we intersect, hence True
             return True
     return False
+
+# class SegArcCollisionDetector()
