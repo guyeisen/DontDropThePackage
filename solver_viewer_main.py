@@ -23,6 +23,7 @@ WINDOW_TITLE = "DiscoPygal Solver Viewer"
 DEFAULT_ZOOM = 30
 DEFAULT_SCENE = "small_scene.json"
 DEFAULT_SOLVER = "prm.py"
+DEFAULT_DISC_SIZE = 0.01
 
 def get_available_solvers():
     """
@@ -205,7 +206,7 @@ class SolverViewerGUI(Ui_MainWindow):
             self.clear_graph()
         else:
             self.show_graph()
-        
+
     def show_graph(self):
         """
         Display the solver graph
@@ -219,15 +220,9 @@ class SolverViewerGUI(Ui_MainWindow):
                 x1, y1 = p.x().to_double(), p.y().to_double()
                 x2, y2 = q.x().to_double(), q.y().to_double()
                 self.solver_graph_vertices.append(
-                    self.add_disc(
-                        0.05, x1, y1, QtCore.Qt.red, QtCore.Qt.red
-                    )
-                )
+                    self.add_disc(DEFAULT_DISC_SIZE, x1, y1, QtCore.Qt.red, QtCore.Qt.red))
                 self.solver_graph_vertices.append(
-                    self.add_disc(
-                        0.05, x2, y2, QtCore.Qt.red, QtCore.Qt.red
-                    )
-                )
+                    self.add_disc(DEFAULT_DISC_SIZE, x2, y2, QtCore.Qt.red, QtCore.Qt.red))
                 self.solver_graph_edges.append(
                     self.add_segment(x1, y1, x2, y2, QtCore.Qt.red, opacity=0.7)
                 )
@@ -237,17 +232,18 @@ class SolverViewerGUI(Ui_MainWindow):
                     x2, y2 = q[2*i].to_double(), q[2*i+1].to_double()
                     self.solver_graph_vertices.append(
                     self.add_disc(
-                        0.05, x1, y1, QtCore.Qt.red, QtCore.Qt.red
+                        DEFAULT_DISC_SIZE, x1, y1, QtCore.Qt.blue, QtCore.Qt.red
                         )
                     )
                     self.solver_graph_vertices.append(
                         self.add_disc(
-                            0.05, x2, y2, QtCore.Qt.red, QtCore.Qt.red
+                            DEFAULT_DISC_SIZE, x2, y2, QtCore.Qt.blue, QtCore.Qt.red
                         )
                     )
-                    self.solver_graph_edges.append(
-                        self.add_segment(x1, y1, x2, y2, QtCore.Qt.red, opacity=0.7)
-                    )
+                    if (x1,y1) != (x2,y2) :
+                        self.solver_graph_edges.append(
+                            self.add_segment(x1, y1, x2, y2, QtCore.Qt.blue, opacity=0.7)
+                        )
 
     def clear_graph(self):
         """
@@ -259,6 +255,7 @@ class SolverViewerGUI(Ui_MainWindow):
             self.scene.removeItem(edge.line)
         self.solver_graph_vertices.clear()
         self.solver_graph_edges.clear()
+        self.redraw()
 
     def action_pause(self):
         """
@@ -345,7 +342,7 @@ class SolverViewerGUI(Ui_MainWindow):
                 x1, y1 = points[i].location.x().to_double(
                 ), points[i].location.y().to_double()
                 self.path_vertices.append(self.add_disc(
-                    0.05, x1, y1, QtCore.Qt.magenta, QtCore.Qt.magenta))
+                    DEFAULT_DISC_SIZE, x1, y1, QtCore.Qt.magenta, QtCore.Qt.magenta))
 
                 if i < len(points)-1:
                     if points[i] == points[i+1]:
@@ -354,6 +351,7 @@ class SolverViewerGUI(Ui_MainWindow):
                                                                           1].location.y().to_double()
                     self.path_edges.append(self.add_segment(
                         x1, y1, x2, y2, QtCore.Qt.magenta))
+        #self.redraw()
 
     def clear_paths(self):
         """
