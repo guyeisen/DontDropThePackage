@@ -119,6 +119,7 @@ class SolverViewerGUI(Ui_MainWindow):
         # Setup solver
         self.solver_dialog = None
         self.solver_class = None
+        self.solver = None
         self.actionOpenSolver.triggered.connect(self.load_solver)
         self.actionOpen_Solver.triggered.connect(self.load_solver)
         self.actionSolve.triggered.connect(self.solve)
@@ -389,6 +390,8 @@ class SolverViewerGUI(Ui_MainWindow):
         self.paths = solver.solve()
         self.solver_graph = solver.get_graph()
         self.solver_arrangement = solver.get_arrangement()
+
+        self.solver = solver
 
     def solve(self):
         """

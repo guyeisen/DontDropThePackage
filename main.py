@@ -16,7 +16,7 @@ from discopygal.solvers import SceneDrawer
 from discopygal.solvers import Scene
 from discopygal.solvers import Solver
 
-from smooth_path import smooth_path, angle_to_point
+from smooth_path import smooth_path, get_angle_of_point
 from solver_viewer_main import SolverViewerGUI
 
 DEFAULT_SCENE = "testscene.json"
@@ -249,14 +249,23 @@ if __name__ == '__main__':
     collision_detector : ObjectCollisionDetection = prm.collision_detection[robot]
 
     smooth_path = smooth_path(path, collision_detector)
+    print([type(s) for s in smooth_path])
 
-    # todo - add all arcs to scene:
-    for s in smooth_path:
-        if str(type(s)) == "<class 'CGALPY.Ker.Circle_2'>":
-            r = math.sqrt(s.squared_radius().to_double())
-            center = s.center()
-            # stat_angle =
-            env.gui.add_circle_segment(r, center.x().to_double(), center.y().to_double(), start_angle=math.pi, end_angle=2*math.pi, clockwise=True)
+    # add all arcs to scene:
+    for i in range(len(smooth_path)):
+        if type(smooth_path[i]) is Ker.Circle_2:
+            c = smooth_path[i]
+            prev_seg = smooth_path[i-1]
+            next_seg = smooth_path[i+1]
+            r = math.sqrt(c.squared_radius().to_double())
+            center = c.center()
+            arc_source_angle = get_angle_of_point(c, prev_seg.target())
+            arc_target_angle = get_angle_of_point(c, next_seg.source())
+
+            env.gui.add_circle_segment(r, center.x().to_double(), center.y().to_double(), start_angle=arc_source_angle, end_angle=arc_target_angle, clockwise= (c.orientation() == Ker.CLOCKWISE))
+        else:
+            seg = smooth_path[i]
+            env.gui.add_segment(seg.source().x().to_double(), seg.source().y().to_double(), seg.target().x().to_double(), seg.target().y().to_double())
 
     env.gui.mainWindow.show()
 
