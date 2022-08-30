@@ -57,11 +57,13 @@ def get_arc_source_and_target(p1, p2, p3):
     shorter_s = s1 if s1.squared_length() < s2.squared_length() else s2 # the shorter segment
     len_shorter_s = math.sqrt(shorter_s.squared_length().to_double())
     longer_s = s2 if s1.squared_length() < s2.squared_length() else s1  # the shorter segment
-    longer_s_ray = Ray_2(longer_s.source(), longer_s.target())
-
+    if longer_s == s1:
+        longer_s_ray = Ray_2(p2, longer_s.source())
+    else:
+        longer_s_ray = Ray_2(p2, longer_s.target())
     closer_p = s1.source() if s1.squared_length() < s2.squared_length() else s2.target() # the closer point
     # the intersection of "c" and "longer_s"
-    other_p = longer_s_ray.point(FT(len_shorter_s)) # todo - calculate manually
+    other_p = get_point_on_ray(longer_s_ray, len_shorter_s)
 
     if shorter_s == s1:
         source = closer_p
@@ -93,7 +95,30 @@ def get_angle_of_point(circle, point):
 
     return alpha
 
-    # ---------------------------- get_circle: -------------------------------------
+# ------------------------ grt point on ray: -------------------------------------
+def get_point_on_ray(ray, dis):
+    source = ray.source()
+    x_source = source.x().to_double()
+    y_source = source.y().to_double()
+
+    direction = ray.direction()
+    dx = direction.dx().to_double()
+    dy = direction.dy().to_double()
+
+    squared_slope = (dy/dx)*(dy/dx)
+
+    x_sign = dx/math.fabs(dx)
+    y_sign = dy/math.fabs(dy)
+
+    x_dis = x_sign*(math.sqrt((dis*dis) / (1+squared_slope)))
+    y_dis = y_sign*(math.fabs((dy/dx) * x_dis))
+
+    x = x_source + x_dis
+    y = y_source + y_dis
+
+    return Ker.Point_2(x,y)
+
+# ---------------------------- get_circle: -------------------------------------
 
 ''' return a circle that is tangent to segments p1-p2 and p2-p3 at some points that are closer then p1 and p3 (or equal to them)'''
 def get_circle(p1, p2, p3):
@@ -125,11 +150,10 @@ def get_circle(p1, p2, p3):
     # -- the circle center (Img3) --
     line_shorter_seg = Ker.Line_2(closer_p, p2)
     perpendicular_line = line_shorter_seg.perpendicular(closer_p)
-    if Ker.right_turn(p1,p2,p3): # (closer_p == p1 and Ker.left_turn(p1,p2,p3)) or (closer_p == p3 and Ker.left_turn(p1,p2,p3)): #todo ?
+    if (closer_p == p1 and Ker.right_turn(p1,p2,p3)) or (closer_p == p3 and Ker.left_turn(p1,p2,p3)):
         perpendicular_line = perpendicular_line.opposite()
-
     ray_to_center = Ker.Ray_2(closer_p, perpendicular_line)
-    center = ray_to_center.point(FT(r)) # todo - calculate manually (working with 0.5 for some reason)
+    center = get_point_on_ray(ray_to_center, r)
 
     # arc direction (Img4)
     direction = Ker.CLOCKWISE if ((x2-x1)*(y3-y2)-(y2-y1)*(x3-x2)) < 0 else Ker.COUNTERCLOCKWISE
@@ -146,59 +170,64 @@ def smooth_path(path, collision_detector):
 
     points = path.points # type points: list<class:`PathPoint`>
     prev_point = points[0].location
-    for i in range(len(points)-3):
-        p1 = points[i].location
-        p2 = points[i+1].location
-        p3 = points[i+2].location
+    for i in range(1, len(points)-1):
+        p1 = points[i-1].location
+        p2 = points[i].location
+        p3 = points[i+1].location
 
         p_seg1 = Ker.midpoint(p1, p2)
         p_seg2 = Ker.midpoint(p2, p3)
         c = get_circle(p_seg1, p2, p_seg2)
         arc_source, arc_target = get_arc_source_and_target(p_seg1, p2, p_seg2)
 
-        # ---- success on the first attempt: -------
-        if collision_detector.is_arc_valid(c, arc_source, arc_target):
-            res.append(Ker.Segment_2(prev_point, arc_source))
-            res.append(c)
-            prev_point = arc_target
-        # ---- binary search for the optimal circle: ---
-        else:
-            closer_p = p1 if dis(p1,p2) < dis(p2,p3) else p3  # the closer point
-            valid_c = valid_arc_source = valid_arc_target = None
-            if closer_p == p1:
-                start = p_seg1
-                end = p2
-                for i in range(10):
-                    c = get_circle(p_seg1, p2, p_seg2)
-                    arc_source, arc_target = get_arc_source_and_target(p_seg1, p2, p_seg2)
-                    if collision_detector.is_arc_valid(c, arc_source, arc_target):
-                        end = p_seg1
-                        valid_c, valid_arc_source, valid_arc_target = c, arc_source, arc_target
-                    else:
-                        start = p_seg1
-                    p_seg1 = Ker.midpoint(start,end)
+        # temp - without collision detector todo delete
+        res.append(Ker.Segment_2(prev_point, arc_source))
+        res.append(c)
+        prev_point = arc_target
 
-            else: # closer_p is p2
-                start = p2
-                end = p_seg2
-                for i in range(10):
-                    c = get_circle(p_seg1, p2, p_seg2)
-                    arc_source, arc_target = get_arc_source_and_target(p_seg1, p2, p_seg2)
-                    if collision_detector.is_arc_valid(c, arc_source, arc_target):
-                        start = p_seg2
-                        valid_c, valid_arc_source, valid_arc_target = c, arc_source, arc_target
-                    else:
-                        end = p_seg2
-                    p_seg2 = Ker.midpoint(start, end)
-
-            if valid_c is None: # didn't found a valid circle in 10 iteration - return circle of radius 0
-                res.append(Ker.Segment_2(prev_point, p2))
-                res.append(Ker.Circle_2(p2, 0, Ker.CLOCKWISE))
-                prev_point = p2
-            else:
-                res.append(Ker.Segment_2(prev_point, valid_arc_source))
-                res.append(valid_c)
-                prev_point = valid_arc_target
+        # # ---- success on the first attempt: -------
+        # if collision_detector.is_arc_valid(c, arc_source, arc_target):
+        #     res.append(Ker.Segment_2(prev_point, arc_source))
+        #     res.append(c)
+        #     prev_point = arc_target
+        # # ---- binary search for the optimal circle: ---
+        # else:
+        #     closer_p = p1 if dis(p1,p2) < dis(p2,p3) else p3  # the closer point
+        #     valid_c = valid_arc_source = valid_arc_target = None
+        #     if closer_p == p1:
+        #         start = p_seg1
+        #         end = p2
+        #         for i in range(10):
+        #             c = get_circle(p_seg1, p2, p_seg2)
+        #             arc_source, arc_target = get_arc_source_and_target(p_seg1, p2, p_seg2)
+        #             if collision_detector.is_arc_valid(c, arc_source, arc_target):
+        #                 end = p_seg1
+        #                 valid_c, valid_arc_source, valid_arc_target = c, arc_source, arc_target
+        #             else:
+        #                 start = p_seg1
+        #             p_seg1 = Ker.midpoint(start,end)
+        #
+        #     else: # closer_p is p2
+        #         start = p2
+        #         end = p_seg2
+        #         for i in range(10):
+        #             c = get_circle(p_seg1, p2, p_seg2)
+        #             arc_source, arc_target = get_arc_source_and_target(p_seg1, p2, p_seg2)
+        #             if collision_detector.is_arc_valid(c, arc_source, arc_target):
+        #                 start = p_seg2
+        #                 valid_c, valid_arc_source, valid_arc_target = c, arc_source, arc_target
+        #             else:
+        #                 end = p_seg2
+        #             p_seg2 = Ker.midpoint(start, end)
+        #
+        #     if valid_c is None: # didn't found a valid circle in 10 iteration - return circle of radius 0
+        #         res.append(Ker.Segment_2(prev_point, p2))
+        #         res.append(Ker.Circle_2(p2, 0, Ker.CLOCKWISE))
+        #         prev_point = p2
+        #     else:
+        #         res.append(Ker.Segment_2(prev_point, valid_arc_source))
+        #         res.append(valid_c)
+        #         prev_point = valid_arc_target
     # append the last segment:
     res.append(Ker.Segment_2(prev_point, points[-1].location))
     return res
@@ -222,7 +251,7 @@ if __name__ == '__main__':
     # longer_s_ray = Ray_2(longer_s.source(), longer_s.target())
     #
     # closer_p = p1 if s1.squared_length() < s2.squared_length() else p3 # the closer point
-    # other_p = longer_s_ray.point(FT(len_shorter_s)) # the intersection of "c" and "longer_s" # todo - calculate manually
+    # other_p = get_point_on_ray(longer_s_ray, len_shorter_s) # the intersection of "c" and "longer_s"
     #
     # # arc = Circular_arc_2(c, closer_p, other_p)
     #
@@ -230,11 +259,17 @@ if __name__ == '__main__':
     # print(c.squared_radius())
 
     # ----------------------------------------
-    p1 = Point_2(-1, 2)
-    p2 = Point_2(0, 0)
-    p3 = Point_2(2, 4)
 
-    c = get_circle(p1, p2, p3)
+    p0 = Point_2(-1, 2)
+    p1 = Point_2(0, 0)
+    p2 = Point_2(2, 4)
+    p3 = Point_2(5, -2)
+    p4 = Point_2(3, -6)
+    p5 = Point_2(4, -8)
+
+    my_points = [p0, p1, p2, p3, p4, p5]
+
+    c = get_circle(Ker.midpoint(p2, p3), p3, Ker.midpoint(p3, p4))
     print("center: ", c.center())
     print("squared_radius: ", c.squared_radius())
     print("orientation: ", c.orientation())
