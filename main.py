@@ -227,6 +227,14 @@ def run_path(control: RobotControl, path):
         print(f'Angle: {angle}, Distance: {distance}')
         control.rotate_and_go(angle, distance)
 
+def slalum(control: RobotControl, rpm):
+    control.glide_smoothly(start_speed=0.0, end_speed=rpm, distance=0.6)
+    control.move_circle_Husband(speed=rpm, R=0.3, theta=math.pi, circle_orient=Ker.CLOCKWISE)
+    control.move_straight_exact(distance=0.6, speed=rpm)
+    control.move_circle_Husband(speed=rpm, R=0.3, theta=math.pi, circle_orient=Ker.COUNTERCLOCKWISE)
+    control.move_straight_exact(distance=0.6, speed=rpm)
+    control.move_circle_Husband(speed=rpm, R=0.3, theta=math.pi, circle_orient=Ker.CLOCKWISE)
+    control.glide_smoothly(start_speed=rpm, end_speed=0.0, distance=0.6)
 
 def add_smooth_path_to_scene(env, smooth_path):
     for i in range(len(smooth_path)):
@@ -260,5 +268,12 @@ if __name__ == '__main__':
     add_smooth_path_to_scene(env, smooth_path)
 
     env.gui.mainWindow.show()
+
+    # ------------- move robot: ---------
+    # robot_path = RobotPath(env.gui.paths.paths[robot].points)
+    # run_path(control, robot_path.path_for_robot)
+    # # ----------- set led to purple: ----------
+    # control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=10, b=10, effect=led.EFFECT_ON)
+    # control.ep_robot.close()
 
     sys.exit(env.app.exec_())

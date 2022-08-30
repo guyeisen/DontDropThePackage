@@ -1,6 +1,10 @@
+import itertools
+import threading
+from typing import List
+
 import networkx as nx
 import matplotlib.pyplot as plt
-from discopygal.bindings import Segment_2, Point_2
+from discopygal.bindings import Segment_2, Point_2, Point_d
 
 from discopygal.solvers import Robot, RobotDisc, RobotPolygon, RobotRod
 from discopygal.solvers import Obstacle, ObstacleDisc, ObstaclePolygon, Scene
@@ -12,6 +16,17 @@ from discopygal.solvers.nearest_neighbors import NearestNeighbors, NearestNeighb
 from discopygal.solvers.samplers import Sampler, Sampler_Uniform
 from discopygal.geometry_utils import conversions
 import collision_detection
+
+#from smooth_path import get_circle
+lock = threading.Lock()
+NUM_OF_LANDMARKS = 50
+NEAEREST_NEIGHBOUR = 10
+
+class PointForOptimization:
+    """ (connected_to)-------(p)"""
+    def __init__(self, point: Point_d, connected_to: Point_d):
+        self.point = point
+        self.connected_to = connected_to
 
 class PRM(Solver):
     """
@@ -50,6 +65,7 @@ class PRM(Solver):
             self.sampler = Sampler_Uniform()
 
         self.roadmap = None
+        self.roadmap_optimized = None
         self.collision_detection = {}
         self.start = None
         self.end = None
@@ -65,8 +81,8 @@ class PRM(Solver):
         :rtype: dict
         """
         return {
-            'num_landmarks': ('Number of Landmarks:', 1000, int),
-            'k': ('K for nearest neighbors:', 15, int),
+            'num_landmarks': ('Number of Landmarks:', NUM_OF_LANDMARKS, int),
+            'k': ('K for nearest neighbors:', NEAEREST_NEIGHBOUR, int),
         }
 
     @staticmethod
@@ -147,6 +163,7 @@ class PRM(Solver):
         # Build the PRM
         ################
         self.roadmap = nx.Graph()
+        self.roadmap_optimized = nx.Graph()
 
         # Add start & end points
         self.start = conversions.Point_2_list_to_Point_d([robot.start for robot in scene.robots])
@@ -163,15 +180,42 @@ class PRM(Solver):
 
         self.nearest_neighbors.fit(list(self.roadmap.nodes))
 
+        dic_optPoint_to_optPoint_of_neighbor = {}
         # Connect all points to their k nearest neighbors
         for cnt, point in enumerate(self.roadmap.nodes):
             neighbors = self.nearest_neighbors.k_nearest(point, self.k + 1)
+            mini_cluster = []
             for neighbor in neighbors:
+                opt_p = PointForOptimization(point,neighbor)
+                opt_neighbor = PointForOptimization(neighbor,point)
+                dic_optPoint_to_optPoint_of_neighbor[opt_neighbor] = opt_p
+                dic_optPoint_to_optPoint_of_neighbor[opt_p] = opt_neighbor
+                self.roadmap_optimized.add_node(opt_p)
+                mini_cluster.append(opt_p)
                 if self.collision_free(neighbor, point):
                     self.roadmap.add_edge(point, neighbor, weight=self.metric.dist(point, neighbor).to_double())
+            # create the "dummy" edges
+            for p1,p2 in itertools.combinations(mini_cluster,2):
+                self.add_optimized_edge(p1,p2,weight=lambda x,y,z:1)
 
             if cnt % 100 == 0 and self.verbose:
                 print('connected', cnt, 'landmarks to their nearest neighbors', file=self.writer)
+
+        #For the rest of the edges in self.roadmap.optimized, I have to go over them again..
+        for i,opt_point in enumerate(list(self.roadmap_optimized.nodes)):
+            print(i)
+            if opt_point in dic_optPoint_to_optPoint_of_neighbor:
+                neigh = dic_optPoint_to_optPoint_of_neighbor[opt_point]
+                self.roadmap_optimized.add_edge(opt_point, neigh)
+                dic_optPoint_to_optPoint_of_neighbor.pop(opt_point)
+                dic_optPoint_to_optPoint_of_neighbor.pop(neigh)
+        print("HEY!")
+
+
+    def add_optimized_edge(self, p1:PointForOptimization, p2:PointForOptimization, weight=lambda prev, curr, next:1/(1+get_circle(prev,curr,next).squared_radius()) ):
+        """wrapper to adding edge with weight as a function. default is the function 1/(1+R^2)
+            where R is the circle raduis that those segments create"""
+        self.roadmap_optimized.add_edge(p1, p2,weight=weight(p1.connected_to,p1.point,p2.connected_to))
 
     def solve(self):
         """

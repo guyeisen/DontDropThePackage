@@ -1,3 +1,6 @@
+"""THIS IS SOLVER_VIEWER_MAIN WRITTEN BY MICHAEL.
+    WE ONLY EDITED IT A BIT TO GET OUR NEEDS"""
+
 import os
 import sys
 import json
