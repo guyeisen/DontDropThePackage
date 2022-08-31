@@ -227,31 +227,7 @@ def run_path(control: RobotControl, path):
         control.rotate_and_go(angle, distance)
 
 
-if __name__ == '__main__':
-    # control = RobotControl()
-    #control.move_circ_2(R=1,speed=0.5,alpha=0)
-    #control.begin_slowly_to_speed(0.3)
-    #control.ep_chassis.drive_wheels(w1=60, w2=60, w3=60, w4=60, timeout=60)
-    #time.sleep(60)
-
-    #### --------- RUN THE PRM PATH -----------####
-    env = EnviromentConfigurations()
-
-    while(env.gui.paths == None):
-        print(f"Waiting for path to be created...")
-        pass
-    print("Path created!")
-    env.gui.toggle_paths()
-
-    robot = env.gui.discopygal_scene.robots[0]
-    path = env.gui.paths.paths[robot]
-    prm = env.gui.solver
-    collision_detector : ObjectCollisionDetection = prm.collision_detection[robot]
-
-    smooth_path = smooth_path(path, collision_detector)
-    print([type(s) for s in smooth_path])
-
-    # add all arcs to scene:
+def add_smooth_path_to_scene(env, smooth_path):
     for i in range(len(smooth_path)):
         if type(smooth_path[i]) is Ker.Circle_2:
             c = smooth_path[i]
@@ -267,13 +243,21 @@ if __name__ == '__main__':
             seg = smooth_path[i]
             env.gui.add_segment(seg.source().x().to_double(), seg.source().y().to_double(), seg.target().x().to_double(), seg.target().y().to_double())
 
-    env.gui.mainWindow.show()
+if __name__ == '__main__':
 
-    # ------------- move robot: ---------
-    # robot_path = RobotPath(env.gui.paths.paths[robot].points)
-    # run_path(control, robot_path.path_for_robot)
-    # # ----------- set led to purple: ----------
-    # control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=10, b=10, effect=led.EFFECT_ON)
-    # control.ep_robot.close()
+    #### --------- RUN THE PRM PATH -----------####
+    env = EnviromentConfigurations()
+
+    while(env.gui.paths == None):
+        print(f"Waiting for path to be created...")
+        pass
+    print("Path created!")
+    env.gui.toggle_paths()
+
+    # smooth_path:
+    smooth_path = smooth_path(env)
+    add_smooth_path_to_scene(env, smooth_path)
+
+    env.gui.mainWindow.show()
 
     sys.exit(env.app.exec_())

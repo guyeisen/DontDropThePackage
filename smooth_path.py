@@ -165,9 +165,15 @@ def get_circle(p1, p2, p3):
 
 # ---------------------------------- smooth_path: ---------------------------------------------------
 
-def smooth_path(path, collision_detector):
+def smooth_path(env):
     ''' returns a list of segments and circles alternately.
     the circles forms circular arcs that starts/ends at the midpoint of the original segments at most '''
+
+    robot = env.gui.discopygal_scene.robots[0]
+    path = env.gui.paths.paths[robot]
+    prm = env.gui.solver
+    collision_detector : ObjectCollisionDetection = prm.collision_detection[robot]
+
     res = []
 
     points = path.points # type points: list<class:`PathPoint`>

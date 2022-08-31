@@ -1,10 +1,10 @@
 import math
 
 import numpy as np
-from CGALPY.Ker import Segment_2, Circle_2, Direction_2
+# from CGALPY.Ker import Segment_2, Circle_2, Direction_2
 
-from Ker import *
-from discopygal.bindings import Segment_2, Point_2
+# from Ker import *
+from discopygal.bindings import *
 
 from rdp import rdp
 
@@ -13,7 +13,7 @@ def douglas_poiker(points):
     #TODO
     pass
 
-def parse_path(rays: [Ray_2], last_point: Point_2):
+def parse_path(rays: [Ker.Ray_2], last_point: Point_2):
     """
     returns list of tuples: (starting angle, distance)
                      (p2)
