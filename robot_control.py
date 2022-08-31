@@ -1,6 +1,6 @@
 import time
 import math
-from typing import List
+from typing import List, Any
 
 import numpy as np
 from CGALPY import Ker
@@ -71,7 +71,7 @@ class RobotControl:
             time_for_action += t
         return time_for_action
 
-    def glide_smoothly(self, start_speed, end_speed, distance, intervals=30, should_stop=False):
+    def glide_smoothly(self, start_speed, end_speed, distance,  func:Any, oposite_func:Any ,intervals=30,should_stop=False):
         """
         glide through start_speed (m/s) to end_speed (m/s) whithin distance(m)
         intervals are the number of speed changes the robot will make
@@ -79,9 +79,9 @@ class RobotControl:
         MOVES ONLY IN STRAIGHT LINE.
         feature: WILL NOT stop at the end of the run. possibly will need to change this.
         """
-        S = np.linspace(start=math.exp(start_speed), stop=math.exp(end_speed), num=int(intervals))
+        S = np.linspace(start=func(start_speed), stop=func(end_speed), num=int(intervals))
         print(S)
-        speeds = [math.log(s) for s in S]
+        speeds = [oposite_func(s) for s in S]
         print(speeds)
         for i, s in enumerate(speeds):
             if s==0:
