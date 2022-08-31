@@ -281,14 +281,14 @@ class SolverViewerGUI(Ui_MainWindow):
         self.scene_drawer.clear_scene()
         self.scene_drawer.draw_scene()
 
-    def toggle_paths(self):
+    def toggle_paths(self, optimize):
         """
         Toggle paths button
         """
         if len(self.path_vertices) > 0 or len(self.path_vetices_optimized) > 0:
             self.clear_paths()
         else:
-            self.draw_both_paths()
+            self.draw_both_paths(optimize)
 
     def anim_finished(self):
         """
@@ -357,13 +357,14 @@ class SolverViewerGUI(Ui_MainWindow):
                     if (x1,y1) != (x2,y2):
                         edges.append(self.add_segment( x1, y1, x2, y2,color))
 
-    def draw_both_paths(self):
+    def draw_both_paths(self,optimize):
         """
         Draw both paths (if exist) (regular and optimized)
         """
-
-        self.draw_path(self.paths_optimized, self.path_vetices_optimized, self.path_edges_optimized, QtCore.Qt.green)
-        #self.draw_path(self.paths, self.path_vertices, self.path_edges, QtCore.Qt.magenta)
+        if optimize:
+            self.draw_path(self.paths_optimized, self.path_vetices_optimized, self.path_edges_optimized, QtCore.Qt.green)
+        else:
+            self.draw_path(self.paths, self.path_vertices, self.path_edges, QtCore.Qt.magenta)
 
 
 

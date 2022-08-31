@@ -22,7 +22,7 @@ import collision_detection
 from smooth_path import get_circle
 
 lock = threading.Lock()
-NUM_OF_LANDMARKS = 30
+NUM_OF_LANDMARKS = 100
 NEAEREST_NEIGHBOUR = 5
 
 class PointForOptimization:

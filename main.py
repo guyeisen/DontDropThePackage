@@ -252,28 +252,57 @@ def add_smooth_path_to_scene(env, smooth_path):
             seg = smooth_path[i]
             env.gui.add_segment(seg.source().x().to_double(), seg.source().y().to_double(), seg.target().x().to_double(), seg.target().y().to_double())
 
-if __name__ == '__main__':
+def get_robot():
+    control = None
+    while control == None:
+        try:
+            control = RobotControl()
+        except Exception as e:
+            print("GOT ERROR CONNECTING, TRYING AGAIN")
+    print("ROBOT CONNECTED")
+    time.sleep(10)
+    return robot
 
-    #### --------- RUN THE PRM PATH -----------####
-    env = EnviromentConfigurations()
+def testings(control):
+    control.glide_smoothly(start_speed=0.0, end_speed=1.5, distance=5,func=lambda x:x, oposite_func=lambda x:x)
+    control.glide_smoothly(start_speed=0.0, end_speed=1.5, distance=5, func=math.exp, oposite_func=math.log)
+    control.move_circle_BF(speed=0.7, R = 0.6, theta=4*math.pi)
+    control.move_straight_exact(distance=2,speed=0.6)
+    control.begin_slowly_to_speed(speed=0.6)
+    control.move_straight_exact(distance=0.6, speed=0.5)
 
-    while(env.gui.paths == None):
-        print(f"Waiting for path to be created...")
+    slalum(control, rpm=0.3)
+
+    control.move_circ_2(R=1,speed=0.5,alpha=0)
+    control.begin_slowly_to_speed(0.3)
+    control.ep_chassis.drive_wheels(w1=60, w2=60, w3=60, w4=60, timeout=5)
+    time.sleep(5)
+
+    # ------------- move robot: ---------
+    # robot_path = RobotPath(env.gui.paths.paths[robot].points)
+    # run_path(control, robot_path.path_for_robot)
+def draw_paths(env, optimize=False):
+    while (env.gui.paths_optimized == None):
+        # print(f"Waiting for path to be created...")
         pass
     print("Path created!")
-    env.gui.toggle_paths()
+    env.gui.toggle_paths(optimize)
+
+def end_robot(control):
+    # ----------- set led to grey: ----------#
+    control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=10, b=10, effect=led.EFFECT_ON)
+    control.ep_robot.close()
+
+if __name__ == '__main__':
+    # control = get_robot()
+    # testings(control)
+    env = EnviromentConfigurations()
 
     # smooth_path:
     smooth_path = smooth_path(env)
     add_smooth_path_to_scene(env, smooth_path)
 
     env.gui.mainWindow.show()
-
-    # ------------- move robot: ---------
-    # robot_path = RobotPath(env.gui.paths.paths[robot].points)
-    # run_path(control, robot_path.path_for_robot)
-    # # ----------- set led to purple: ----------
-    # control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=10, b=10, effect=led.EFFECT_ON)
-    # control.ep_robot.close()
-
+    draw_paths(env)
+    # end_robot(control)
     sys.exit(env.app.exec_())
