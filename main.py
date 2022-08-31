@@ -241,7 +241,8 @@ def add_smooth_path_to_scene(env, smooth_path):
             env.gui.add_circle_segment(r, center.x().to_double(), center.y().to_double(), start_angle=arc_source_angle, end_angle=arc_target_angle, clockwise= (c.orientation() == Ker.CLOCKWISE))
         else:
             seg = smooth_path[i]
-            env.gui.add_segment(seg.source().x().to_double(), seg.source().y().to_double(), seg.target().x().to_double(), seg.target().y().to_double())
+            if seg.squared_length() > FT(0.0001):
+                env.gui.add_segment(seg.source().x().to_double(), seg.source().y().to_double(), seg.target().x().to_double(), seg.target().y().to_double())
 
 if __name__ == '__main__':
 
@@ -249,14 +250,57 @@ if __name__ == '__main__':
     env = EnviromentConfigurations()
 
     while(env.gui.paths == None):
-        print(f"Waiting for path to be created...")
-        pass
+       #print(f"Waiting for path to be created...")
+       pass
     print("Path created!")
     env.gui.toggle_paths()
+
+    # temp - my path:
+    # p0 = Point_2(-1, 2)
+    # p1 = Point_2(0, 0)
+    # p2 = Point_2(2, 4)
+    # p3 = Point_2(5, -2)
+    # p4 = Point_2(3, -6)
+    # p5 = Point_2(4, -8)
+    # my_points = [p0, p1, p2, p3, p4, p5]
+    # for i in range(len(path.points)):
+    #     path_point = path.points[i]
+    #     path_point.location = my_points[i]
+
+    # temp - path for "simple_scene":
+    p0 = Point_2(-4, -4)
+    p1 = Point_2(2.97521, -1.92828)
+    p2 = Point_2(-4.30751, 1.47929)
+    p3 = Point_2(3, 2)
+    my_points = [p0, p1, p2, p3]
+    robot = env.gui.discopygal_scene.robots[0]
+    path = env.gui.paths.paths[robot]
+    for i in range(4):
+        path_point = path.points[i]
+        path_point.location = my_points[i]
+    path.points = path.points[:4]
+
 
     # smooth_path:
     smooth_path = smooth_path(env)
     add_smooth_path_to_scene(env, smooth_path)
+
+    #
+    # # print smooth path:
+    # print("\nsmooth path: ")
+    # for i in range(len(smooth_path)):
+    #     if type(smooth_path[i]) is Ker.Circle_2:
+    #         c = smooth_path[i]
+    #         r = math.sqrt(c.squared_radius().to_double())
+    #         prev_seg = smooth_path[i-1]
+    #         next_seg = smooth_path[i+1]
+    #         arc_source_angle = get_angle_of_point(c, prev_seg.target())
+    #         arc_target_angle = get_angle_of_point(c, next_seg.source())
+    #         print(f"circle_{i} -- center: {c.center()} -- radius: {r} -- source_point: {prev_seg.target()} -- target_point: {next_seg.source()}"
+    #               f" \n-- start_angle: {np.rad2deg(arc_source_angle)} -- end_angle: {np.rad2deg(arc_target_angle)} -- orient: {c.orientation()}\n")
+    #     else:
+    #         seg = smooth_path[i]
+    #         print(f"seg_{i} -- {seg}\n")
 
     env.gui.mainWindow.show()
 

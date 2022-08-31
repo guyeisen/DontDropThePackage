@@ -21,7 +21,7 @@ from solver_viewer_gui import Ui_MainWindow, Ui_dialog, About_Dialog
 
 WINDOW_TITLE = "DiscoPygal Solver Viewer"
 DEFAULT_ZOOM = 30
-DEFAULT_SCENE = "small_scene.json"
+DEFAULT_SCENE = "simple_scene.json" # "small_scene.json"
 DEFAULT_SOLVER = "prm.py"
 
 def get_available_solvers():
