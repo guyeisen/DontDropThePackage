@@ -84,14 +84,16 @@ def get_angle_of_point(circle, point):
     y = point.y().to_double()
     r = dis(center, point)
 
+    dy = math.fabs(y-yc)
+
     if xc < x and yc < y :
-        alpha = math.fabs(math.asin((y-yc)/r))
+        alpha = math.fabs(math.asin(dy/r))
     elif x < xc and yc < y :
-        alpha = 0.5 * math.pi + math.fabs(math.acos((y-yc)/r))
-    elif x<xc and y<yc :
-        alpha = math.pi + math.fabs((math.asin((y-yc)/r)))
+        alpha = 0.5 * math.pi + math.fabs(math.acos(dy/r))
+    elif x < xc and y < yc :
+        alpha = math.pi + math.fabs(math.asin(dy/r))
     else:
-        alpha = 1.5 * math.pi + math.fabs(math.acos((y-yc)/r))
+        alpha = 1.5 * math.pi + math.fabs(math.acos(dy/r))
 
     return alpha
 
