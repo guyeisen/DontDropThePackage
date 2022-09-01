@@ -20,7 +20,7 @@ from discopygal.solvers import Solver
 from smooth_path import smooth_path, get_angle_of_point
 from solver_viewer_main import SolverViewerGUI
 
-DEFAULT_SCENE = "testscene.json"
+DEFAULT_SCENE = "small_scene.json"
 
 class EnviromentConfigurations():
     def __init__(self):
@@ -83,47 +83,47 @@ class EnviromentConfigurations():
             args[arg] = ttype(solver_args[arg][1])
         return args
 
-    def solve_thread(self):
-        """
-        The thread that is run by the "solve" function"
-        """
-        solver_args = self.get_solver_args()
-        #solver.set_verbose(self.writer)
-        solver = self.solver_class.from_arguments(solver_args)
-        solver.load_scene(self.gui.discopygal_scene)
-        self.gui.paths = solver.solve()
-        self.gui.solver_graph = solver.get_graph()
-        self.gui.solver_arrangement = solver.get_arrangement()
+    # def solve_thread(self):
+    #     """
+    #     The thread that is run by the "solve" function"
+    #     """
+    #     solver_args = self.get_solver_args()
+    #     #solver.set_verbose(self.writer)
+    #     solver = self.solver_class.from_arguments(solver_args)
+    #     solver.load_scene(self.gui.discopygal_scene)
+    #     self.gui.paths = solver.solve()
+    #     self.gui.solver_graph = solver.get_graph()
+    #     self.gui.solver_arrangement = solver.get_arrangement()
 
-    def solver_from_file(self):
-        """
-        Loads the solver
-        """
-        path = "prm.py"
-        try:
-            spec = importlib.util.spec_from_file_location(path, path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            cnt = 0
-            for obj_name in dir(module):
-                obj = getattr(module, obj_name)
-                if isclass(obj) and issubclass(obj, Solver) and obj_name != "Solver":
-                    self.solver_class = obj
-                    globals()[obj_name] = obj
-                    cnt += 1
-        except Exception as e:
-            print("Could not import module", repr(e))
+    # def solver_from_file(self):
+    #     """
+    #     Loads the solver
+    #     """
+    #     path = "prm.py"
+    #     try:
+    #         spec = importlib.util.spec_from_file_location(path, path)
+    #         module = importlib.util.module_from_spec(spec)
+    #         spec.loader.exec_module(module)
+    #         cnt = 0
+    #         for obj_name in dir(module):
+    #             obj = getattr(module, obj_name)
+    #             if isclass(obj) and issubclass(obj, Solver) and obj_name != "Solver":
+    #                 self.solver_class = obj
+    #                 globals()[obj_name] = obj
+    #                 cnt += 1
+    #     except Exception as e:
+    #         print("Could not import module", repr(e))
 
 
-    def solve(self):
-        """
-        This method is called by the solve button.
-        Run the MP solver in parallel to the app.
-        """
-        if self.solver_class is None:
-            print("self.solver_class is None")
-            return
-        self.solve_thread()
+    # def solve(self):
+    #     """
+    #     This method is called by the solve button.
+    #     Run the MP solver in parallel to the app.
+    #     """
+    #     if self.solver_class is None:
+    #         print("self.solver_class is None")
+    #         return
+    #     self.solve_thread()
 
 
 
@@ -297,12 +297,12 @@ if __name__ == '__main__':
     # control = get_robot()
     # testings(control)
     env = EnviromentConfigurations()
-
+    draw_paths(env,optimize=True)
     # smooth_path:
     smooth_path = smooth_path(env)
     add_smooth_path_to_scene(env, smooth_path)
 
     env.gui.mainWindow.show()
-    draw_paths(env)
+
     # end_robot(control)
     sys.exit(env.app.exec_())

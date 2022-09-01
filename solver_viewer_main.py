@@ -217,7 +217,9 @@ class SolverViewerGUI(Ui_MainWindow):
     def show_graph(self):
         """
         Display the solver graph
-        """ 
+        """
+        DOTS = QtCore.Qt.darkGray
+        EDGES = QtCore.Qt.gray
         if self.solver_graph is None:
             return
 
@@ -227,11 +229,11 @@ class SolverViewerGUI(Ui_MainWindow):
                 x1, y1 = p.x().to_double(), p.y().to_double()
                 x2, y2 = q.x().to_double(), q.y().to_double()
                 self.solver_graph_vertices.append(
-                    self.add_disc(DEFAULT_DISC_SIZE, x1, y1, QtCore.Qt.red, QtCore.Qt.red))
+                    self.add_disc(DEFAULT_DISC_SIZE, x1, y1, DOTS, DOTS))
                 self.solver_graph_vertices.append(
-                    self.add_disc(DEFAULT_DISC_SIZE, x2, y2, QtCore.Qt.red, QtCore.Qt.red))
+                    self.add_disc(DEFAULT_DISC_SIZE, x2, y2, DOTS, DOTS))
                 self.solver_graph_edges.append(
-                    self.add_segment(x1, y1, x2, y2, QtCore.Qt.red, opacity=0.7)
+                    self.add_segment(x1, y1, x2, y2, EDGES, opacity=0.7)
                 )
             else:
                 for i in range(p.dimension() // 2):
@@ -239,17 +241,17 @@ class SolverViewerGUI(Ui_MainWindow):
                     x2, y2 = q[2*i].to_double(), q[2*i+1].to_double()
                     self.solver_graph_vertices.append(
                     self.add_disc(
-                        DEFAULT_DISC_SIZE, x1, y1, QtCore.Qt.blue, QtCore.Qt.red
+                        DEFAULT_DISC_SIZE, x1, y1, DOTS, DOTS
                         )
                     )
                     self.solver_graph_vertices.append(
                         self.add_disc(
-                            DEFAULT_DISC_SIZE, x2, y2, QtCore.Qt.blue, QtCore.Qt.red
+                            DEFAULT_DISC_SIZE, x2, y2, DOTS, DOTS
                         )
                     )
                     if (x1,y1) != (x2,y2) :
                         self.solver_graph_edges.append(
-                            self.add_segment(x1, y1, x2, y2, QtCore.Qt.blue, opacity=0.7)
+                            self.add_segment(x1, y1, x2, y2, EDGES, opacity=0.7)
                         )
 
     def clear_graph(self):
@@ -285,6 +287,7 @@ class SolverViewerGUI(Ui_MainWindow):
         """
         Toggle paths button
         """
+
         if len(self.path_vertices) > 0 or len(self.path_vetices_optimized) > 0:
             self.clear_paths()
         else:
@@ -365,8 +368,6 @@ class SolverViewerGUI(Ui_MainWindow):
             self.draw_path(self.paths_optimized, self.path_vetices_optimized, self.path_edges_optimized, QtCore.Qt.green)
         else:
             self.draw_path(self.paths, self.path_vertices, self.path_edges, QtCore.Qt.magenta)
-
-
 
     def clear_paths(self):
         """
