@@ -1,0 +1,212 @@
+{
+  "__class__": "Scene",
+  "obstacles": [
+    {
+      "__class__": "ObstaclePolygon",
+      "poly": [
+        [
+          -1.0,
+          5.0
+        ],
+        [
+          1.0,
+          5.0
+        ]
+      ],
+      "data": {
+        "color": "",
+        "name": "",
+        "value": "",
+        "details": ""
+      }
+    },
+    {
+      "__class__": "ObstaclePolygon",
+      "poly": [
+        [
+          1.0,
+          -4.0
+        ],
+        [
+          1.0,
+          -3.0
+        ],
+        [
+          0.0,
+          -4.0
+        ]
+      ],
+      "data": {
+        "color": "",
+        "name": "",
+        "value": "",
+        "details": ""
+      }
+    },
+    {
+      "__class__": "ObstaclePolygon",
+      "poly": [
+        [
+          -1.0,
+          -4.0
+        ],
+        [
+          0.0,
+          -3.0
+        ],
+        [
+          -1.0,
+          -3.0
+        ]
+      ],
+      "data": {
+        "color": "",
+        "name": "",
+        "value": "",
+        "details": ""
+      }
+    },
+    {
+      "__class__": "ObstaclePolygon",
+      "poly": [
+        [
+          1.0,
+          -3.0
+        ],
+        [
+          1.0,
+          -1.0
+        ],
+        [
+          0.0,
+          -2.0
+        ]
+      ],
+      "data": {
+        "color": "",
+        "name": "",
+        "value": "",
+        "details": ""
+      }
+    },
+    {
+      "__class__": "ObstacleDisc",
+      "location": [
+        0.0,
+        0.0
+      ],
+      "radius": 0.5,
+      "data": {
+        "color": "",
+        "name": "",
+        "value": "",
+        "details": ""
+      }
+    },
+    {
+      "__class__": "ObstaclePolygon",
+      "poly": [
+        [
+          -1.0,
+          3.0
+        ],
+        [
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          3.0
+        ]
+      ],
+      "data": {
+        "color": "",
+        "name": "",
+        "value": "",
+        "details": ""
+      }
+    },
+    {
+      "__class__": "ObstaclePolygon",
+      "poly": [
+        [
+          -1.0,
+          5.0
+        ],
+        [
+          -1.0,
+          -6.0
+        ]
+      ],
+      "data": {
+        "color": "",
+        "name": "",
+        "value": "",
+        "details": ""
+      }
+    },
+    {
+      "__class__": "ObstaclePolygon",
+      "poly": [
+        [
+          -1.0,
+          -6.0
+        ],
+        [
+          1.0,
+          -6.0
+        ]
+      ],
+      "data": {
+        "color": "",
+        "name": "",
+        "value": "",
+        "details": ""
+      }
+    },
+    {
+      "__class__": "ObstaclePolygon",
+      "poly": [
+        [
+          1.0,
+          5.0
+        ],
+        [
+          1.0,
+          -6.0
+        ]
+      ],
+      "data": {
+        "color": "",
+        "name": "",
+        "value": "",
+        "details": ""
+      }
+    }
+  ],
+  "robots": [
+    {
+      "__class__": "RobotDisc",
+      "radius": 0.2,
+      "start": [
+        0.0,
+        -5.0
+      ],
+      "end": [
+        0.0,
+        4.0
+      ],
+      "data": {
+        "color": "",
+        "name": "",
+        "value": "",
+        "details": ""
+      }
+    }
+  ],
+  "metadata": {
+    "version": "1.0.1",
+    "solvers": "",
+    "details": ""
+  }
+}

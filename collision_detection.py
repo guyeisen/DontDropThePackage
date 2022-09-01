@@ -77,7 +77,7 @@ class ObjectCollisionDetection(object):
         center = circle.center()
         x_center = center.x().to_double()
         y_center = center.y().to_double()
-        arc_radius = dis(center, arc_source)
+        arc_radius = math.sqrt(circle.squared_radius().to_double())
         arc_source_angle = get_angle_of_point(circle, arc_source)
         arc_target_angle = get_angle_of_point(circle, arc_target)
 

@@ -25,7 +25,7 @@ from solver_viewer_gui import Ui_MainWindow, Ui_dialog, About_Dialog
 
 WINDOW_TITLE = "DiscoPygal Solver Viewer"
 DEFAULT_ZOOM = 30
-DEFAULT_SCENE = "simple_scene.json" # "slalom_scene.json" # "simple_scene.json" # "obs_scene.json" #  "small_scene.json"
+DEFAULT_SCENE = "corridor_scene.json" # "slalom_scene.json" # "simple_scene.json" # "obs_scene.json" #  "small_scene.json"
 DEFAULT_SOLVER = "prm.py"
 DEFAULT_DISC_SIZE = 0.01
 
