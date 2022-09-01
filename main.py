@@ -4,6 +4,7 @@ import importlib.util
 import sys
 import json
 import importlib.util
+import traceback
 from inspect import isclass
 from PyQt5 import QtWidgets
 # from CGALPY.Ker import Ray_2, Direction_2
@@ -342,21 +343,26 @@ def print_smooth_path(smooth_path):
 # -------------------------------------------- main: -------------------------------------------------------
 
 if __name__ == '__main__':
-    # control = get_robot()
-    # testings(control)
-    env = EnviromentConfigurations()
-    draw_paths(env,optimize=True)
+    try:
+        # control = get_robot()
+        # testings(control)
+        env = EnviromentConfigurations()
+        draw_paths(env,optimize=True)
 
-    # replace_path_with_my_path(path) # todo temp delete
-    # replace_path_for_simple_scene(env) # todo temp delete
+        # replace_path_with_my_path(path) # todo temp delete
+        # replace_path_for_simple_scene(env) # todo temp delete
 
-    # smooth_path:
-    smooth_path = smooth_path(env, use_cd=False)
-    add_smooth_path_to_scene(env, smooth_path)
+        # smooth_path:
+        smooth_path = smooth_path(env, use_cd=False)
+        add_smooth_path_to_scene(env, smooth_path)
 
-    # print_smooth_path() # todo temp delete
+        # print_smooth_path() # todo temp delete
 
-    env.gui.mainWindow.show()
+        env.gui.mainWindow.show()
 
-    # end_robot(control)
+        # end_robot(control)
+    except Exception as e:
+        print(repr(e))
+        traceback.print_exc()
+
     sys.exit(env.app.exec_())
