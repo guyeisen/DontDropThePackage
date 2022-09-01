@@ -7,6 +7,7 @@ from collision_detection import *
 # Aos2 = CGALPY.Aos2
 # Ker = CGALPY.Ker
 
+
 Segment_2 = Ker.Segment_2
 Ray_2 = Ker.Ray_2
 Vector_2 = Ker.Vector_2
@@ -45,6 +46,8 @@ def get_angle(p1,p2,p3):
     y3 = p3.y().to_double()
 
     k = (dis(p1, p2)) * (dis(p2, p3))
+    if k==0:
+        return 0
     theta = math.acos(((x3 - x2) * (x1 - x2) + (y3 - y2) * (y1 - y2)) / k)
     return theta
 
@@ -145,7 +148,8 @@ def get_circle(p1, p2, p3):
 
     # the circle radius (Img1)
     r = math.tan(0.5 * theta) * len_shorter_s
-
+    if len_shorter_s == 0:
+        print(f"IM ZERO, {p1} {p2} {p3}")
     # the angle from shorter_s to the x axis (Img3)
     alpha = math.acos((x2-x_closer)/len_shorter_s)
 
@@ -170,7 +174,11 @@ def smooth_path(env):
     the circles forms circular arcs that starts/ends at the midpoint of the original segments at most '''
 
     robot = env.gui.discopygal_scene.robots[0]
-    path = env.gui.paths.paths[robot]
+    paths = env.gui.paths_optimized.paths.get(robot)
+    while paths is None:
+        paths = env.gui.paths_optimized.paths.get(robot)
+
+    path = env.gui.paths_optimized.paths[robot]
     prm = env.gui.solver
     collision_detector : ObjectCollisionDetection = prm.collision_detection[robot]
 

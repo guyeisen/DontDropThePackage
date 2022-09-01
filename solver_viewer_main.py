@@ -1,11 +1,15 @@
+"""THIS IS SOLVER_VIEWER_MAIN WRITTEN BY MICHAEL.
+    WE ONLY EDITED IT A BIT TO GET OUR NEEDS"""
+
 import os
 import sys
 import json
 import importlib.util
 from inspect import isclass
+from typing import List
 
 from PyQt5 import QtWidgets
-
+from discopygal.gui import RDisc
 
 sys.path.append('./src')
 
@@ -23,6 +27,7 @@ WINDOW_TITLE = "DiscoPygal Solver Viewer"
 DEFAULT_ZOOM = 30
 DEFAULT_SCENE = "simple_scene.json" # "small_scene.json"
 DEFAULT_SOLVER = "prm.py"
+DEFAULT_DISC_SIZE = 0.01
 
 def get_available_solvers():
     """
@@ -136,8 +141,11 @@ class SolverViewerGUI(Ui_MainWindow):
 
         # Solution paths and misc data
         self.paths = None
+        self.paths_optimized = None
         self.path_vertices = []  # gui
+        self.path_vetices_optimized = []
         self.path_edges = []  # gui
+        self.path_edges_optimized = []
         self.set_animation_finished_action(self.anim_finished)
         
         # Setup actions
@@ -205,11 +213,13 @@ class SolverViewerGUI(Ui_MainWindow):
             self.clear_graph()
         else:
             self.show_graph()
-        
+
     def show_graph(self):
         """
         Display the solver graph
-        """ 
+        """
+        DOTS = QtCore.Qt.darkGray
+        EDGES = QtCore.Qt.gray
         if self.solver_graph is None:
             return
 
@@ -219,17 +229,11 @@ class SolverViewerGUI(Ui_MainWindow):
                 x1, y1 = p.x().to_double(), p.y().to_double()
                 x2, y2 = q.x().to_double(), q.y().to_double()
                 self.solver_graph_vertices.append(
-                    self.add_disc(
-                        0.05, x1, y1, QtCore.Qt.red, QtCore.Qt.red
-                    )
-                )
+                    self.add_disc(DEFAULT_DISC_SIZE, x1, y1, DOTS, DOTS))
                 self.solver_graph_vertices.append(
-                    self.add_disc(
-                        0.05, x2, y2, QtCore.Qt.red, QtCore.Qt.red
-                    )
-                )
+                    self.add_disc(DEFAULT_DISC_SIZE, x2, y2, DOTS, DOTS))
                 self.solver_graph_edges.append(
-                    self.add_segment(x1, y1, x2, y2, QtCore.Qt.red, opacity=0.7)
+                    self.add_segment(x1, y1, x2, y2, EDGES, opacity=0.7)
                 )
             else:
                 for i in range(p.dimension() // 2):
@@ -237,17 +241,18 @@ class SolverViewerGUI(Ui_MainWindow):
                     x2, y2 = q[2*i].to_double(), q[2*i+1].to_double()
                     self.solver_graph_vertices.append(
                     self.add_disc(
-                        0.05, x1, y1, QtCore.Qt.red, QtCore.Qt.red
+                        DEFAULT_DISC_SIZE, x1, y1, DOTS, DOTS
                         )
                     )
                     self.solver_graph_vertices.append(
                         self.add_disc(
-                            0.05, x2, y2, QtCore.Qt.red, QtCore.Qt.red
+                            DEFAULT_DISC_SIZE, x2, y2, DOTS, DOTS
                         )
                     )
-                    self.solver_graph_edges.append(
-                        self.add_segment(x1, y1, x2, y2, QtCore.Qt.red, opacity=0.7)
-                    )
+                    if (x1,y1) != (x2,y2) :
+                        self.solver_graph_edges.append(
+                            self.add_segment(x1, y1, x2, y2, EDGES, opacity=0.7)
+                        )
 
     def clear_graph(self):
         """
@@ -259,6 +264,7 @@ class SolverViewerGUI(Ui_MainWindow):
             self.scene.removeItem(edge.line)
         self.solver_graph_vertices.clear()
         self.solver_graph_edges.clear()
+        self.redraw()
 
     def action_pause(self):
         """
@@ -277,14 +283,15 @@ class SolverViewerGUI(Ui_MainWindow):
         self.scene_drawer.clear_scene()
         self.scene_drawer.draw_scene()
 
-    def toggle_paths(self):
+    def toggle_paths(self, optimize):
         """
         Toggle paths button
         """
-        if len(self.path_vertices) > 0:
+
+        if len(self.path_vertices) > 0 or len(self.path_vetices_optimized) > 0:
             self.clear_paths()
         else:
-            self.draw_paths()
+            self.draw_both_paths(optimize)
 
     def anim_finished(self):
         """
@@ -332,39 +339,48 @@ class SolverViewerGUI(Ui_MainWindow):
         self.queue_animation(*animations)
         self.play_queue()
 
-    def draw_paths(self):
+
+    def draw_path(self, paths, vertices, edges, color:int):
         """
         Draw the paths (if exist)
         """
-        if self.paths is None:
+        if paths.paths is None:
             return
 
-        for robot in self.paths.paths:
-            points = self.paths.paths[robot].points
+        for robot in paths.paths:
+            points = paths.paths[robot].points
             for i in range(len(points)):
-                x1, y1 = points[i].location.x().to_double(
-                ), points[i].location.y().to_double()
-                self.path_vertices.append(self.add_disc(
-                    0.05, x1, y1, QtCore.Qt.magenta, QtCore.Qt.magenta))
+                x1, y1 = points[i].location.x().to_double(), points[i].location.y().to_double()
+                vertices.append(self.add_disc(DEFAULT_DISC_SIZE, x1, y1, color, color))
 
-                if i < len(points)-1:
-                    if points[i] == points[i+1]:
+                if i < len(points) - 1:
+                    if points[i] == points[i + 1]:
                         continue
-                    x2, y2 = points[i+1].location.x().to_double(), points[i +
-                                                                          1].location.y().to_double()
-                    self.path_edges.append(self.add_segment(
-                        x1, y1, x2, y2, QtCore.Qt.magenta))
+                    x2, y2 = points[i + 1].location.x().to_double(), points[i + 1].location.y().to_double()
+                    if (x1,y1) != (x2,y2):
+                        edges.append(self.add_segment( x1, y1, x2, y2,color))
+
+    def draw_both_paths(self,optimize):
+        """
+        Draw both paths (if exist) (regular and optimized)
+        """
+        if optimize:
+            self.draw_path(self.paths_optimized, self.path_vetices_optimized, self.path_edges_optimized, QtCore.Qt.green)
+        else:
+            self.draw_path(self.paths, self.path_vertices, self.path_edges, QtCore.Qt.magenta)
 
     def clear_paths(self):
         """
         Clear the paths if any were drawn
         """
-        for vertex in self.path_vertices:
+        for vertex in set(self.path_vertices)|set(self.path_vetices_optimized):
             self.scene.removeItem(vertex.disc)
-        for edge in self.path_edges:
+        for edge in set(self.path_edges)|set(self.path_edges_optimized):
             self.scene.removeItem(edge.line)
         self.path_vertices.clear()
+        self.path_vetices_optimized.clear()
         self.path_edges.clear()
+        self.path_edges_optimized.clear()
 
     def get_solver_args(self):
         """
@@ -387,7 +403,8 @@ class SolverViewerGUI(Ui_MainWindow):
         solver = self.solver_class.from_arguments(args)
         solver.set_verbose(self.writer)
         solver.load_scene(self.discopygal_scene)
-        self.paths = solver.solve()
+        #self.paths = solver.solve()
+        self.paths, self.paths_optimized = solver.solve()
         self.solver_graph = solver.get_graph()
         self.solver_arrangement = solver.get_arrangement()
 

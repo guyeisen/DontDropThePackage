@@ -1,3 +1,4 @@
+import math
 import os
 import importlib.util
 import sys
@@ -19,7 +20,7 @@ from discopygal.solvers import Solver
 from smooth_path import smooth_path, get_angle_of_point
 from solver_viewer_main import SolverViewerGUI
 
-DEFAULT_SCENE = "testscene.json"
+DEFAULT_SCENE = "small_scene.json"
 
 class EnviromentConfigurations():
     def __init__(self):
@@ -82,47 +83,47 @@ class EnviromentConfigurations():
             args[arg] = ttype(solver_args[arg][1])
         return args
 
-    def solve_thread(self):
-        """
-        The thread that is run by the "solve" function"
-        """
-        solver_args = self.get_solver_args()
-        #solver.set_verbose(self.writer)
-        solver = self.solver_class.from_arguments(solver_args)
-        solver.load_scene(self.gui.discopygal_scene)
-        self.gui.paths = solver.solve()
-        self.gui.solver_graph = solver.get_graph()
-        self.gui.solver_arrangement = solver.get_arrangement()
+    # def solve_thread(self):
+    #     """
+    #     The thread that is run by the "solve" function"
+    #     """
+    #     solver_args = self.get_solver_args()
+    #     #solver.set_verbose(self.writer)
+    #     solver = self.solver_class.from_arguments(solver_args)
+    #     solver.load_scene(self.gui.discopygal_scene)
+    #     self.gui.paths = solver.solve()
+    #     self.gui.solver_graph = solver.get_graph()
+    #     self.gui.solver_arrangement = solver.get_arrangement()
 
-    def solver_from_file(self):
-        """
-        Loads the solver
-        """
-        path = "prm.py"
-        try:
-            spec = importlib.util.spec_from_file_location(path, path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            cnt = 0
-            for obj_name in dir(module):
-                obj = getattr(module, obj_name)
-                if isclass(obj) and issubclass(obj, Solver) and obj_name != "Solver":
-                    self.solver_class = obj
-                    globals()[obj_name] = obj
-                    cnt += 1
-        except Exception as e:
-            print("Could not import module", repr(e))
+    # def solver_from_file(self):
+    #     """
+    #     Loads the solver
+    #     """
+    #     path = "prm.py"
+    #     try:
+    #         spec = importlib.util.spec_from_file_location(path, path)
+    #         module = importlib.util.module_from_spec(spec)
+    #         spec.loader.exec_module(module)
+    #         cnt = 0
+    #         for obj_name in dir(module):
+    #             obj = getattr(module, obj_name)
+    #             if isclass(obj) and issubclass(obj, Solver) and obj_name != "Solver":
+    #                 self.solver_class = obj
+    #                 globals()[obj_name] = obj
+    #                 cnt += 1
+    #     except Exception as e:
+    #         print("Could not import module", repr(e))
 
 
-    def solve(self):
-        """
-        This method is called by the solve button.
-        Run the MP solver in parallel to the app.
-        """
-        if self.solver_class is None:
-            print("self.solver_class is None")
-            return
-        self.solve_thread()
+    # def solve(self):
+    #     """
+    #     This method is called by the solve button.
+    #     Run the MP solver in parallel to the app.
+    #     """
+    #     if self.solver_class is None:
+    #         print("self.solver_class is None")
+    #         return
+    #     self.solve_thread()
 
 
 
@@ -226,6 +227,14 @@ def run_path(control: RobotControl, path):
         print(f'Angle: {angle}, Distance: {distance}')
         control.rotate_and_go(angle, distance)
 
+def slalum(control: RobotControl, rpm):
+    control.glide_smoothly(start_speed=0.0, end_speed=rpm, distance=0.6)
+    control.move_circle_Husband(speed=rpm, R=0.3, theta=math.pi, circle_orient=Ker.CLOCKWISE)
+    control.move_straight_exact(distance=0.6, speed=rpm)
+    control.move_circle_Husband(speed=rpm, R=0.3, theta=math.pi, circle_orient=Ker.COUNTERCLOCKWISE)
+    control.move_straight_exact(distance=0.6, speed=rpm)
+    control.move_circle_Husband(speed=rpm, R=0.3, theta=math.pi, circle_orient=Ker.CLOCKWISE)
+    control.glide_smoothly(start_speed=rpm, end_speed=0.0, distance=0.6)
 
 def add_smooth_path_to_scene(env, smooth_path):
     for i in range(len(smooth_path)):
@@ -244,17 +253,52 @@ def add_smooth_path_to_scene(env, smooth_path):
             if seg.squared_length() > FT(0.0001):
                 env.gui.add_segment(seg.source().x().to_double(), seg.source().y().to_double(), seg.target().x().to_double(), seg.target().y().to_double())
 
-if __name__ == '__main__':
+def get_robot():
+    control = None
+    while control == None:
+        try:
+            control = RobotControl()
+        except Exception as e:
+            print("GOT ERROR CONNECTING, TRYING AGAIN")
+    print("ROBOT CONNECTED")
+    time.sleep(10)
+    return robot
 
-    #### --------- RUN THE PRM PATH -----------####
-    env = EnviromentConfigurations()
+def testings(control):
+    control.glide_smoothly(start_speed=0.0, end_speed=1.5, distance=5,func=lambda x:x, oposite_func=lambda x:x)
+    control.glide_smoothly(start_speed=0.0, end_speed=1.5, distance=5, func=math.exp, oposite_func=math.log)
+    control.move_circle_BF(speed=0.7, R = 0.6, theta=4*math.pi)
+    control.move_straight_exact(distance=2,speed=0.6)
+    control.begin_slowly_to_speed(speed=0.6)
+    control.move_straight_exact(distance=0.6, speed=0.5)
 
-    while(env.gui.paths == None):
-       #print(f"Waiting for path to be created...")
-       pass
+    slalum(control, rpm=0.3)
+
+    control.move_circ_2(R=1,speed=0.5,alpha=0)
+    control.begin_slowly_to_speed(0.3)
+    control.ep_chassis.drive_wheels(w1=60, w2=60, w3=60, w4=60, timeout=5)
+    time.sleep(5)
+
+    # ------------- move robot: ---------
+    # robot_path = RobotPath(env.gui.paths.paths[robot].points)
+    # run_path(control, robot_path.path_for_robot)
+def draw_paths(env, optimize=False):
+    while (env.gui.paths_optimized == None):
+        # print(f"Waiting for path to be created...")
+        pass
     print("Path created!")
-    env.gui.toggle_paths()
+    env.gui.toggle_paths(optimize)
 
+def end_robot(control):
+    # ----------- set led to grey: ----------#
+    control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=10, b=10, effect=led.EFFECT_ON)
+    control.ep_robot.close()
+
+if __name__ == '__main__':
+    # control = get_robot()
+    # testings(control)
+    env = EnviromentConfigurations()
+    draw_paths(env,optimize=True)
     # temp - my path:
     # p0 = Point_2(-1, 2)
     # p1 = Point_2(0, 0)
@@ -304,4 +348,5 @@ if __name__ == '__main__':
 
     env.gui.mainWindow.show()
 
+    # end_robot(control)
     sys.exit(env.app.exec_())

@@ -1,10 +1,11 @@
 import math
+from typing import List
 
 import numpy as np
-# from CGALPY.Ker import Segment_2, Circle_2, Direction_2
+from CGALPY.Ker import Segment_2, Circle_2, Direction_2, Ray_2
 
-# from Ker import *
-from discopygal.bindings import *
+from Ker import *
+from discopygal.bindings import Segment_2, Point_2
 
 from rdp import rdp
 
@@ -13,7 +14,7 @@ def douglas_poiker(points):
     #TODO
     pass
 
-def parse_path(rays: [Ker.Ray_2], last_point: Point_2):
+def parse_path(rays: List[Ray_2], last_point: Point_2):
     """
     returns list of tuples: (starting angle, distance)
                      (p2)
@@ -88,7 +89,7 @@ class PathSection:
 def get_rad_from_direction(direction: Direction_2):
     return math.atan2(direction.dy().to_double(), direction.dx().to_double())
 
-def parse_path(path):
+def parse_path2(path):
     """ assume path is list of segments and circles that connect each segment to the other
         speed/acceleration should be determined afterwards!
         """

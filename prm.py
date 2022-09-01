@@ -1,6 +1,11 @@
+import itertools
+import threading
+from typing import List
+
 import networkx as nx
 import matplotlib.pyplot as plt
-from discopygal.bindings import Segment_2, Point_2
+from CGALPY.Ker import squared_radius
+from discopygal.bindings import Segment_2, Point_2, Point_d
 
 from discopygal.solvers import Robot, RobotDisc, RobotPolygon, RobotRod
 from discopygal.solvers import Obstacle, ObstacleDisc, ObstaclePolygon, Scene
@@ -13,12 +18,41 @@ from discopygal.solvers.samplers import Sampler, Sampler_Uniform
 from discopygal.geometry_utils import conversions
 import collision_detection
 
+#from smooth_path import get_circle
+from smooth_path import get_circle
+
+lock = threading.Lock()
+NUM_OF_LANDMARKS = 100
+NEAEREST_NEIGHBOUR = 15
+
+class PointForOptimization:
+    """ (connected_to)-------(p)"""
+    def __init__(self, point: Point_d, connected_to: Point_d):
+        self.point = point
+        self.connected_to = connected_to
+
+    def __str__(self):
+        return f"main:({self.point})--->({self.connected_to})"
+    def __eq__(self, other):
+        return self.point==other.point and self.connected_to==other.connected_to
+    def __hash__(self):
+        return hash(self.__str__())
+
+class OptimizedGraph(nx.Graph):
+    def __init__(self):
+        super(OptimizedGraph, self).__init__()
+    def add_edge(self, u_of_edge:PointForOptimization ,v_of_edge:PointForOptimization, **attr):
+        """Overriden method for adding edge. keeping that a new edge won't insert already exists nodes."""
+        u, v = u_of_edge, v_of_edge
+        # if u.point == v.point and u.connected_to == v.connected_to :
+        #     return #means this is not an edge, this is a point in graph - nothing to do
+        super().add_edge(u, v, **attr)
+
 class PRM(Solver):
     """
     The basic implementation of a Probabilistic Road Map (PRM) solver.
     Supports multi-robot motion planning, though might be inefficient for more than
     two-three robots.
-
     :param num_landmarks: number of landmarks to sample
     :type num_landmarks: int
     :param k: number of nearest neighbors to connect
@@ -50,6 +84,7 @@ class PRM(Solver):
             self.sampler = Sampler_Uniform()
 
         self.roadmap = None
+        self.roadmap_optimized = None
         self.collision_detection = {}
         self.start = None
         self.end = None
@@ -60,13 +95,12 @@ class PRM(Solver):
         Return a list of arguments and their description, defaults and types.
         Can be used by a GUI to generate fields dynamically.
         Should be overridded by solvers.
-
         :return: arguments dict
         :rtype: dict
         """
         return {
-            'num_landmarks': ('Number of Landmarks:', 1000, int),
-            'k': ('K for nearest neighbors:', 15, int),
+            'num_landmarks': ('Number of Landmarks:', NUM_OF_LANDMARKS, int),
+            'k': ('K for nearest neighbors:', NEAEREST_NEIGHBOUR, int),
         }
 
     @staticmethod
@@ -74,7 +108,6 @@ class PRM(Solver):
         """
         Get a dictionary of arguments and return a solver.
         Should be overridded by solvers.
-
         :param d: arguments dict
         :type d: dict
         """
@@ -84,7 +117,6 @@ class PRM(Solver):
         """
         Return a graph (if applicable).
         Can be overridded by solvers.
-
         :return: graph whose vertices are Point_2 or Point_d
         :rtype: class:'networkx.Graph' or None
         """
@@ -132,7 +164,6 @@ class PRM(Solver):
         """
         Load a scene into the solver.
         Also build the roadmap.
-
         :param scene: scene to load
         :type scene: class:'Scene'
         """
@@ -147,13 +178,19 @@ class PRM(Solver):
         # Build the PRM
         ################
         self.roadmap = nx.Graph()
+        self.roadmap_optimized = OptimizedGraph()
 
         # Add start & end points
         self.start = conversions.Point_2_list_to_Point_d([robot.start for robot in scene.robots])
         self.end = conversions.Point_2_list_to_Point_d([robot.end for robot in scene.robots])
+
         self.roadmap.add_node(self.start)
         self.roadmap.add_node(self.end)
 
+        self.start_opt = PointForOptimization(self.start, self.start)
+        self.end_opt = PointForOptimization(self.end, self.end)
+        self.roadmap_optimized.add_node(self.start_opt)
+        self.roadmap_optimized.add_node(self.end_opt)
         # Add valid points
         for i in range(self.num_landmarks):
             p_rand = self.sample_free()
@@ -163,40 +200,94 @@ class PRM(Solver):
 
         self.nearest_neighbors.fit(list(self.roadmap.nodes))
 
+        dic_optPoint_to_optPoint_of_neighbor = {}
         # Connect all points to their k nearest neighbors
         for cnt, point in enumerate(self.roadmap.nodes):
             neighbors = self.nearest_neighbors.k_nearest(point, self.k + 1)
+            mini_cluster = []
             for neighbor in neighbors:
                 if self.collision_free(neighbor, point):
                     self.roadmap.add_edge(point, neighbor, weight=self.metric.dist(point, neighbor).to_double())
+                    opt_p = PointForOptimization(point,neighbor)
+                    opt_neighbor = PointForOptimization(neighbor,point)
+                    dic_optPoint_to_optPoint_of_neighbor[opt_neighbor] = opt_p
+                    dic_optPoint_to_optPoint_of_neighbor[opt_p] = opt_neighbor
+                    self.roadmap_optimized.add_node(opt_p)
+                    self.roadmap_optimized.add_node(opt_neighbor)
+                    mini_cluster.append(opt_p)
+
+
+            # create the "dummy" edges
+            for p1,p2 in itertools.combinations(mini_cluster,2):
+                self.add_optimized_edge(p1,p2)
+                if p1 == p2:
+                    print(f"{p1}---{p2} ###############################################")
 
             if cnt % 100 == 0 and self.verbose:
                 print('connected', cnt, 'landmarks to their nearest neighbors', file=self.writer)
+
+        #For the rest of the edges in self.roadmap.optimized, I have to go over them again..
+
+        for i,opt_point in enumerate(list(self.roadmap_optimized.nodes)):
+            if opt_point in dic_optPoint_to_optPoint_of_neighbor:
+                neigh = dic_optPoint_to_optPoint_of_neighbor[opt_point]
+                if opt_point != neigh:
+                    self.roadmap_optimized.add_edge(opt_point, neigh, weight=0)
+                    if opt_point == neigh:
+                        print(f"{opt_point}---{neigh} ###############################################")
+                    dic_optPoint_to_optPoint_of_neighbor.pop(opt_point, False)
+                    dic_optPoint_to_optPoint_of_neighbor.pop(neigh, False)
+        print("HEY!")
+
+
+    def add_optimized_edge(self, p1:PointForOptimization, p2:PointForOptimization):
+        """wrapper to adding edge with weight as a function. default is the function 1/(1+R^2)
+            where R is the circle raduis that those segments create"""
+        v0 = Point_2(p1.connected_to[2 * 0], p1.connected_to[2 * 0 + 1])
+        v1 = Point_2(p1.point[2 * 0], p1.point[2 * 0 + 1])
+        v2 = Point_2(p2.connected_to[2 * 0], p2.connected_to[2 * 0 + 1])
+        if v0 != v1 and v1 != v2:
+            c = get_circle(v0, v1, v2)
+            r_squre= c.squared_radius().to_double()
+            r_squre = r_squre
+            weigh =0
+            self.roadmap_optimized.add_edge(p1, p2,weight=1/(1+r_squre))
+        else:
+            self.roadmap_optimized.add_edge(p1,p2,weight=0)
+
 
     def solve(self):
         """
         Based on the start and end locations of each robot, solve the scene
         (i.e. return paths for all the robots)
-
         :return: path collection of motion planning
         :rtype: class:'PathCollection'
         """
         if not nx.algorithms.has_path(self.roadmap, self.start, self.end):
             if self.verbose:
                 print('No path found...', file=self.writer)
-            return PathCollection()
+            return PathCollection(), PathCollection()
 
         # Convert from a sequence of Point_d points to PathCollection
         tensor_path = nx.algorithms.shortest_path(self.roadmap, self.start, self.end, weight='weight')
+        tensor_path_optimized = nx.algorithms.shortest_path(self.roadmap_optimized,self.start_opt, self.end_opt ,weight='weight' )
         path_collection = PathCollection()
+        path_collection_optimized = PathCollection()
         for i, robot in enumerate(self.scene.robots):
             points = []
+            points_optimized = []
             for point in tensor_path:
                 points.append(PathPoint(Point_2(point[2 * i], point[2 * i + 1])))
             path = Path(points)
+            in_path_dic={}
+            for opt_point in tensor_path_optimized:
+                if opt_point.point not in in_path_dic:
+                    points_optimized.append(PathPoint(Point_2(opt_point.point[2*i],opt_point.point[2*i+1])))
+                    in_path_dic[opt_point.point] = True
+            path_optimized = Path(points_optimized)
             path_collection.add_robot_path(robot, path)
-
+            path_collection_optimized.add_robot_path(robot,path_optimized)
         if self.verbose:
             print('Successfully found a path!', file=self.writer)
 
-        return path_collection
+        return path_collection, path_collection_optimized
