@@ -3,7 +3,7 @@ import math
 from typing import List, Any
 
 import numpy as np
-from CGALPY import Ker
+from discopygal.bindings import Ker
 
 from path_optimizations import PathSection
 from robomaster import robot

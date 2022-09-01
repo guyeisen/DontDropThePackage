@@ -299,7 +299,8 @@ if __name__ == '__main__':
     # testings(control)
     env = EnviromentConfigurations()
     draw_paths(env,optimize=True)
-    # temp - my path:
+
+    # --- temp - my path: ---
     # p0 = Point_2(-1, 2)
     # p1 = Point_2(0, 0)
     # p2 = Point_2(2, 4)
@@ -311,10 +312,10 @@ if __name__ == '__main__':
     #     path_point = path.points[i]
     #     path_point.location = my_points[i]
 
-    # temp - path for "simple_scene":
+    # --- temp - path for "simple_scene": ---
     p0 = Point_2(-4, -4)
-    p1 = Point_2(2.97521, -1.92828)
-    p2 = Point_2(-4.30751, 1.47929)
+    p1 = Point_2(3, -2) # Point_2(2.97521, -1.92828)
+    p2 = Point_2(-4.5, 1.5) # Point_2(-4.30751, 1.47929)
     p3 = Point_2(3, 2)
     my_points = [p0, p1, p2, p3]
     robot = env.gui.discopygal_scene.robots[0]

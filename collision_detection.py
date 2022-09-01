@@ -8,6 +8,7 @@ from discopygal.solvers import Obstacle, ObstacleDisc, ObstaclePolygon, Robot, R
 from discopygal.geometry_utils import transform
 
 from discopygal.bindings import *
+from smooth_path import *
 
 EPS = 0.001
 
@@ -70,18 +71,67 @@ class ObjectCollisionDetection(object):
                     return False
         return True
 
+
+    def is_arc_valid_approximated(self, circle, arc_source, arc_target, robot_radius):
+
+        center = circle.center()
+        x_center = center.x().to_double()
+        y_center = center.y().to_double()
+        arc_radius = dis(center, arc_source)
+        arc_source_angle = get_angle_of_point(circle, arc_source)
+        arc_target_angle = get_angle_of_point(circle, arc_target)
+
+        # delta angle of segments:
+        theta = 2 * math.fabs(math.cos(arc_radius/(arc_radius-robot_radius)))
+
+        # ---- division of arc into segments: -------
+        segments_list = []
+        seg_source = arc_source
+        seg_source_angle = arc_source_angle
+        seg_target_angle = seg_source_angle + theta
+        condition = (seg_target_angle < arc_target_angle) if circle.orientation() == Ker.COUNTERCLOCKWISE else (seg_target_angle > arc_target_angle)
+        sign = 1 if circle.orientation() == Ker.COUNTERCLOCKWISE else -1
+        while condition:
+            x_seg_target = x_center + (arc_radius * math.cos(seg_target_angle))
+            y_seg_target = y_center + (arc_radius * math.sin(seg_target_angle))
+            seg_target = Point_2(x_seg_target, y_seg_target)
+            seg = Segment_2(seg_source, seg_target)
+            segments_list.append(seg)
+
+            # for next iteration:
+            seg_source = seg_target
+            seg_source_angle = seg_target_angle
+            seg_target_angle = seg_source_angle + (sign * theta)
+            condition = (seg_target_angle < arc_target_angle) if circle.orientation() == Ker.COUNTERCLOCKWISE else (seg_target_angle > arc_target_angle)
+
+        # add last segment:
+        seg = Segment_2(seg_source, arc_target)
+        segments_list.append(seg)
+
+
+        # ----- check if all segments are valid: ------------
+        for seg in segments_list:
+            if not self.is_edge_valid(seg):
+                return False
+        return True
+
+
     def is_arc_valid(self, circle, source, target):
+
+        # obstacles = self.obstacles
+        # for obs in obstacles:
+        #     poly = obs.poly
+
         res = []
-        # if edge.is_degenerate():
-        #     return True
-        Aos2.zone(self.cspace, X_monotone_curve_2(circle, TPoint(source.x(), source.y()), TPoint(target.x(), target.y()), circle.orientation()), res, self.point_location)
+        x_monotone_curve = X_monotone_curve_2(circle, TPoint(source.x(), source.y()), TPoint(target.x(), target.y()), circle.orientation())
+        Aos2.zone(self.cspace, x_monotone_curve, res, self.point_location)
+
         for obj in res:
             if type(obj) == Face:
                 if obj.data() > 0:
                     return False
         return True
 
-        return True # todo - implement (maybe insert source and target point instead of angle)
 
     def build_cspace(self):
         """
