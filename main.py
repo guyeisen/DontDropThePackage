@@ -294,24 +294,19 @@ def end_robot(control):
     control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=10, b=10, effect=led.EFFECT_ON)
     control.ep_robot.close()
 
-if __name__ == '__main__':
-    # control = get_robot()
-    # testings(control)
-    env = EnviromentConfigurations()
-    draw_paths(env,optimize=True)
+def replace_path_with_my_path(path): # todo temp delete
+    p0 = Point_2(-1, 2)
+    p1 = Point_2(0, 0)
+    p2 = Point_2(2, 4)
+    p3 = Point_2(5, -2)
+    p4 = Point_2(3, -6)
+    p5 = Point_2(4, -8)
+    my_points = [p0, p1, p2, p3, p4, p5]
+    for i in range(len(path.points)):
+        path_point = path.points[i]
+        path_point.location = my_points[i]
 
-    # --- temp - my path: ---
-    # p0 = Point_2(-1, 2)
-    # p1 = Point_2(0, 0)
-    # p2 = Point_2(2, 4)
-    # p3 = Point_2(5, -2)
-    # p4 = Point_2(3, -6)
-    # p5 = Point_2(4, -8)
-    # my_points = [p0, p1, p2, p3, p4, p5]
-    # for i in range(len(path.points)):
-    #     path_point = path.points[i]
-    #     path_point.location = my_points[i]
-
+def replace_path_for_simple_scene(env): # todo temp delete
     # --- temp - path for "simple_scene": ---
     p0 = Point_2(-4, -4)
     p1 = Point_2(3, -2) # Point_2(2.97521, -1.92828)
@@ -319,33 +314,47 @@ if __name__ == '__main__':
     p3 = Point_2(3, 2)
     my_points = [p0, p1, p2, p3]
     robot = env.gui.discopygal_scene.robots[0]
-    path = env.gui.paths.paths[robot]
+    path = None
+    while path is None:
+        path = env.gui.paths_optimized.paths.get(robot)
     for i in range(4):
         path_point = path.points[i]
         path_point.location = my_points[i]
     path.points = path.points[:4]
 
+def print_smooth_path(smooth_path):
+    print("\nsmooth path: ")
+    for i in range(len(smooth_path)):
+        if type(smooth_path[i]) is Ker.Circle_2:
+            c = smooth_path[i]
+            r = math.sqrt(c.squared_radius().to_double())
+            prev_seg = smooth_path[i-1]
+            next_seg = smooth_path[i+1]
+            arc_source_angle = get_angle_of_point(c, prev_seg.target())
+            arc_target_angle = get_angle_of_point(c, next_seg.source())
+            print(f"circle_{i} -- center: {c.center()} -- radius: {r} -- source_point: {prev_seg.target()} -- target_point: {next_seg.source()}"
+                  f" \n-- start_angle: {np.rad2deg(arc_source_angle)} -- end_angle: {np.rad2deg(arc_target_angle)} -- orient: {c.orientation()}\n")
+        else:
+            seg = smooth_path[i]
+            print(f"seg_{i} -- {seg}\n")
+
+
+# -------------------------------------------- main: -------------------------------------------------------
+
+if __name__ == '__main__':
+    # control = get_robot()
+    # testings(control)
+    env = EnviromentConfigurations()
+    draw_paths(env,optimize=True)
+
+    # replace_path_with_my_path(path) # todo temp delete
+    # replace_path_for_simple_scene(env) # todo temp delete
 
     # smooth_path:
-    smooth_path = smooth_path(env)
+    smooth_path = smooth_path(env, use_cd=False)
     add_smooth_path_to_scene(env, smooth_path)
 
-    #
-    # # print smooth path:
-    # print("\nsmooth path: ")
-    # for i in range(len(smooth_path)):
-    #     if type(smooth_path[i]) is Ker.Circle_2:
-    #         c = smooth_path[i]
-    #         r = math.sqrt(c.squared_radius().to_double())
-    #         prev_seg = smooth_path[i-1]
-    #         next_seg = smooth_path[i+1]
-    #         arc_source_angle = get_angle_of_point(c, prev_seg.target())
-    #         arc_target_angle = get_angle_of_point(c, next_seg.source())
-    #         print(f"circle_{i} -- center: {c.center()} -- radius: {r} -- source_point: {prev_seg.target()} -- target_point: {next_seg.source()}"
-    #               f" \n-- start_angle: {np.rad2deg(arc_source_angle)} -- end_angle: {np.rad2deg(arc_target_angle)} -- orient: {c.orientation()}\n")
-    #     else:
-    #         seg = smooth_path[i]
-    #         print(f"seg_{i} -- {seg}\n")
+    # print_smooth_path() # todo temp delete
 
     env.gui.mainWindow.show()
 

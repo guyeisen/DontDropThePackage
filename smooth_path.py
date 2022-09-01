@@ -89,7 +89,7 @@ def get_angle_of_point(circle, point):
     yc = center.y().to_double()
     x = point.x().to_double()
     y = point.y().to_double()
-    r = dis(center, point)
+    r = math.sqrt(circle.squared_radius().to_double())
 
     dy = math.fabs(y-yc)
 
@@ -173,7 +173,7 @@ def get_circle(p1, p2, p3):
 
 # ---------------------------------- smooth_path: ---------------------------------------------------
 
-def smooth_path(env):
+def smooth_path(env, use_cd=True):
     ''' returns a list of segments and circles alternately.
     the circles forms circular arcs that starts/ends at the midpoint of the original segments at most '''
 
@@ -181,10 +181,9 @@ def smooth_path(env):
 
     # -- get the collision_detector object: --
     robot = env.gui.discopygal_scene.robots[0]
-    paths = env.gui.paths_optimized.paths.get(robot)
-    while paths is None:
-        paths = env.gui.paths_optimized.paths.get(robot)
-    path = env.gui.paths_optimized.paths[robot]
+    path = None
+    while path is None:
+        path = env.gui.paths_optimized.paths.get(robot)
     prm = env.gui.solver
     collision_detector : ObjectCollisionDetection = prm.collision_detection[robot]
 
@@ -202,54 +201,55 @@ def smooth_path(env):
         c = get_circle(p_seg1, p2, p_seg2)
         arc_source, arc_target = get_arc_source_and_target(p_seg1, p2, p_seg2)
 
-        # # temp - without collision detector todo delete
-        # res.append(Ker.Segment_2(prev_point, arc_source))
-        # res.append(c)
-        # prev_point = arc_target
+        if use_cd:
+            # ---- success on the first attempt: -------
+            if collision_detector.is_arc_valid_approximated(c, arc_source, arc_target, robot_radius):
+                res.append(Ker.Segment_2(prev_point, arc_source))
+                res.append(c)
+                prev_point = arc_target
+            # ---- binary search for the optimal circle: ---
+            else:
+                closer_p = p1 if dis(p1,p2) < dis(p2,p3) else p3  # the closer point
+                valid_c = valid_arc_source = valid_arc_target = None
+                if closer_p == p1:
+                    start = p_seg1
+                    end = p2
+                    for i in range(10):
+                        c = get_circle(p_seg1, p2, p_seg2)
+                        arc_source, arc_target = get_arc_source_and_target(p_seg1, p2, p_seg2)
+                        if collision_detector.is_arc_valid_approximated(c, arc_source, arc_target, robot_radius):
+                            end = p_seg1
+                            valid_c, valid_arc_source, valid_arc_target = c, arc_source, arc_target
+                        else:
+                            start = p_seg1
+                        p_seg1 = Ker.midpoint(start,end)
 
-        # ---- success on the first attempt: -------
-        if collision_detector.is_arc_valid_approximated(c, arc_source, arc_target, robot_radius):
+                else: # closer_p is p2
+                    start = p2
+                    end = p_seg2
+                    for i in range(10):
+                        c = get_circle(p_seg1, p2, p_seg2)
+                        arc_source, arc_target = get_arc_source_and_target(p_seg1, p2, p_seg2)
+                        if collision_detector.is_arc_valid_approximated(c, arc_source, arc_target, robot_radius):
+                            start = p_seg2
+                            valid_c, valid_arc_source, valid_arc_target = c, arc_source, arc_target
+                        else:
+                            end = p_seg2
+                        p_seg2 = Ker.midpoint(start, end)
+
+                if valid_c is None: # didn't found a valid circle in 10 iteration - return circle of radius 0
+                    res.append(Ker.Segment_2(prev_point, p2))
+                    res.append(Ker.Circle_2(p2, FT(0.0001), Ker.CLOCKWISE))
+                    prev_point = p2
+                else:
+                    res.append(Ker.Segment_2(prev_point, valid_arc_source))
+                    res.append(valid_c)
+                    prev_point = valid_arc_target
+        else:
+            # without collision detector
             res.append(Ker.Segment_2(prev_point, arc_source))
             res.append(c)
             prev_point = arc_target
-        # ---- binary search for the optimal circle: ---
-        else:
-            closer_p = p1 if dis(p1,p2) < dis(p2,p3) else p3  # the closer point
-            valid_c = valid_arc_source = valid_arc_target = None
-            if closer_p == p1:
-                start = p_seg1
-                end = p2
-                for i in range(10):
-                    c = get_circle(p_seg1, p2, p_seg2)
-                    arc_source, arc_target = get_arc_source_and_target(p_seg1, p2, p_seg2)
-                    if collision_detector.is_arc_valid_approximated(c, arc_source, arc_target, robot_radius):
-                        end = p_seg1
-                        valid_c, valid_arc_source, valid_arc_target = c, arc_source, arc_target
-                    else:
-                        start = p_seg1
-                    p_seg1 = Ker.midpoint(start,end)
-
-            else: # closer_p is p2
-                start = p2
-                end = p_seg2
-                for i in range(10):
-                    c = get_circle(p_seg1, p2, p_seg2)
-                    arc_source, arc_target = get_arc_source_and_target(p_seg1, p2, p_seg2)
-                    if collision_detector.is_arc_valid_approximated(c, arc_source, arc_target, robot_radius):
-                        start = p_seg2
-                        valid_c, valid_arc_source, valid_arc_target = c, arc_source, arc_target
-                    else:
-                        end = p_seg2
-                    p_seg2 = Ker.midpoint(start, end)
-
-            if valid_c is None: # didn't found a valid circle in 10 iteration - return circle of radius 0
-                res.append(Ker.Segment_2(prev_point, p2))
-                res.append(Ker.Circle_2(p2, 0, Ker.CLOCKWISE))
-                prev_point = p2
-            else:
-                res.append(Ker.Segment_2(prev_point, valid_arc_source))
-                res.append(valid_c)
-                prev_point = valid_arc_target
 
     # append the last segment:
     res.append(Ker.Segment_2(prev_point, points[-1].location))
