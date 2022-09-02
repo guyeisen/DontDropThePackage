@@ -1,4 +1,5 @@
 import itertools
+import math
 import threading
 from typing import List
 
@@ -19,7 +20,7 @@ from discopygal.geometry_utils import conversions
 import collision_detection
 
 #from smooth_path import get_circle
-from smooth_path import get_circle
+from smooth_path import get_circle, get_angle
 
 lock = threading.Lock()
 NUM_OF_LANDMARKS = 100
@@ -219,9 +220,7 @@ class PRM(Solver):
 
             # create the "dummy" edges
             for p1,p2 in itertools.combinations(mini_cluster,2):
-                self.add_optimized_edge(p1,p2)
-                if p1 == p2:
-                    print(f"{p1}---{p2} ###############################################")
+                self.add_optimizing_edge(p1,p2)
 
             if cnt % 100 == 0 and self.verbose:
                 print('connected', cnt, 'landmarks to their nearest neighbors', file=self.writer)
@@ -232,15 +231,13 @@ class PRM(Solver):
             if opt_point in dic_optPoint_to_optPoint_of_neighbor:
                 neigh = dic_optPoint_to_optPoint_of_neighbor[opt_point]
                 if opt_point != neigh:
-                    self.roadmap_optimized.add_edge(opt_point, neigh, weight=0)
-                    if opt_point == neigh:
-                        print(f"{opt_point}---{neigh} ###############################################")
+                    self.roadmap_optimized.add_edge(opt_point, neigh, weight=0)#self.metric.dist(opt_point.point, neigh.point).to_double())
                     dic_optPoint_to_optPoint_of_neighbor.pop(opt_point, False)
                     dic_optPoint_to_optPoint_of_neighbor.pop(neigh, False)
         print("HEY!")
 
 
-    def add_optimized_edge(self, p1:PointForOptimization, p2:PointForOptimization):
+    def add_optimizing_edge(self, p1:PointForOptimization, p2:PointForOptimization):
         """wrapper to adding edge with weight as a function. default is the function 1/(1+R^2)
             where R is the circle raduis that those segments create"""
         v0 = Point_2(p1.connected_to[2 * 0], p1.connected_to[2 * 0 + 1])
@@ -250,11 +247,17 @@ class PRM(Solver):
             c = get_circle(v0, v1, v2)
             r_squre= c.squared_radius().to_double()
             r_squre = r_squre
+            angle = get_angle(v0,v1,v2)
             weigh =0
-            self.roadmap_optimized.add_edge(p1, p2,weight=1/(1+r_squre))
+            self.roadmap_optimized.add_edge(p1, p2,weight=1/(1+angle))
         else:
             self.roadmap_optimized.add_edge(p1,p2,weight=0)
-
+    def _print_angles(self,points:List[PathPoint]):
+        angles = []
+        for i in range(len(points)-2):
+            angles.append(get_angle(points[i].location,points[i+1].location,points[i+2].location))
+        print([math.degrees(angle) for angle in angles])
+        print(f"SUM: {sum([(1/(1+angle)) for angle in angles])}")
 
     def solve(self):
         """
@@ -272,18 +275,23 @@ class PRM(Solver):
         tensor_path = nx.algorithms.shortest_path(self.roadmap, self.start, self.end, weight='weight')
         tensor_path_optimized = nx.algorithms.shortest_path(self.roadmap_optimized,self.start_opt, self.end_opt ,weight='weight' )
         path_collection = PathCollection()
-        path_collection_optimized = PathCollection()
+        reset = {}
+        path_collection_optimized = PathCollection(paths=reset) #PathCollection is defined with defalt argument set to {}! THAT MEAN ALL PATHCOLLECTION INSTANCES WILL SHARE THE SAME DIC!
         for i, robot in enumerate(self.scene.robots):
             points = []
             points_optimized = []
             for point in tensor_path:
                 points.append(PathPoint(Point_2(point[2 * i], point[2 * i + 1])))
+            print("SHORTEST:")
+            self._print_angles(points)
             path = Path(points)
             in_path_dic={}
             for opt_point in tensor_path_optimized:
                 if opt_point.point not in in_path_dic:
                     points_optimized.append(PathPoint(Point_2(opt_point.point[2*i],opt_point.point[2*i+1])))
                     in_path_dic[opt_point.point] = True
+            print("OPTIMIZED:")
+            self._print_angles(points_optimized)
             path_optimized = Path(points_optimized)
             path_collection.add_robot_path(robot, path)
             path_collection_optimized.add_robot_path(robot,path_optimized)

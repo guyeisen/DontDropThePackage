@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from discopygal.bindings import *
+from discopygal.geometry_utils.collision_detection import ObjectCollisionDetection
 
 from collision_detection import *
 
@@ -173,18 +174,17 @@ def get_circle(p1, p2, p3):
 
 # ---------------------------------- smooth_path: ---------------------------------------------------
 
-def smooth_path(env, use_cd=True):
+def get_smooth_path(gui, use_cd=True):
     ''' returns a list of segments and circles alternately.
     the circles forms circular arcs that starts/ends at the midpoint of the original segments at most '''
 
     robot_radius = 0.5 * (math.sqrt(ROBOT_WIDTH*ROBOT_WIDTH + ROBOT_LENGTH*ROBOT_LENGTH))
 
     # -- get the collision_detector object: --
-    robot = env.gui.discopygal_scene.robots[0]
+    robot = gui.discopygal_scene.robots[0]
     path = None
-    while path is None:
-        path = env.gui.paths_optimized.paths.get(robot)
-    prm = env.gui.solver
+    path = gui.paths_optimized.paths.get(robot)
+    prm = gui.solver
     collision_detector : ObjectCollisionDetection = prm.collision_detection[robot]
 
     res = []

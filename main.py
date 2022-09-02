@@ -4,11 +4,13 @@ import importlib.util
 import sys
 import json
 import importlib.util
+import time
 import traceback
 from inspect import isclass
 from PyQt5 import QtWidgets
 # from CGALPY.Ker import Ray_2, Direction_2
 from collision_detection import ObjectCollisionDetection
+from path_optimizations import parse_path2
 from robot_control import *
 from discopygal.bindings import Point_2
 from discopygal.bindings import *
@@ -18,7 +20,7 @@ from discopygal.solvers import SceneDrawer
 from discopygal.solvers import Scene
 from discopygal.solvers import Solver
 
-from smooth_path import smooth_path, get_angle_of_point
+from smooth_path import get_angle_of_point
 from solver_viewer_main import SolverViewerGUI
 
 DEFAULT_SCENE = "small_scene.json"
@@ -237,22 +239,6 @@ def slalum(control: RobotControl, rpm):
     control.move_circle_Husband(speed=rpm, R=0.3, theta=math.pi, circle_orient=Ker.CLOCKWISE)
     control.glide_smoothly(start_speed=rpm, end_speed=0.0, distance=0.6)
 
-def add_smooth_path_to_scene(env, smooth_path):
-    for i in range(len(smooth_path)):
-        if type(smooth_path[i]) is Ker.Circle_2:
-            c = smooth_path[i]
-            prev_seg = smooth_path[i-1]
-            next_seg = smooth_path[i+1]
-            r = math.sqrt(c.squared_radius().to_double())
-            center = c.center()
-            arc_source_angle = get_angle_of_point(c, prev_seg.target())
-            arc_target_angle = get_angle_of_point(c, next_seg.source())
-
-            env.gui.add_circle_segment(r, center.x().to_double(), center.y().to_double(), start_angle=arc_source_angle, end_angle=arc_target_angle, clockwise= (c.orientation() == Ker.CLOCKWISE))
-        else:
-            seg = smooth_path[i]
-            if seg.squared_length() > FT(0.0001):
-                env.gui.add_segment(seg.source().x().to_double(), seg.source().y().to_double(), seg.target().x().to_double(), seg.target().y().to_double())
 
 def get_robot():
     control = None
@@ -344,17 +330,22 @@ def print_smooth_path(smooth_path):
 
 if __name__ == '__main__':
     try:
-        # control = get_robot()
-        # testings(control)
+        # control:RobotControl = get_robot()
+        #testings(control)
         env = EnviromentConfigurations()
-        draw_paths(env,optimize=True)
+        #draw_paths(env,optimize=True)
+
+        # while env.gui.smooth_path is None:
+        #     print("Waiting for path creation...")
+        #     pass
+
+        # path_for_robot = parse_path2(env.gui.smooth_path)
+        # control.run_path(path_for_robot)
 
         # replace_path_with_my_path(path) # todo temp delete
         # replace_path_for_simple_scene(env) # todo temp delete
 
-        # smooth_path:
-        smooth_path = smooth_path(env, use_cd=False)
-        add_smooth_path_to_scene(env, smooth_path)
+
 
         # print_smooth_path() # todo temp delete
 

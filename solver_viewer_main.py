@@ -5,6 +5,7 @@ import os
 import sys
 import json
 import importlib.util
+import time
 from inspect import isclass
 from typing import List
 
@@ -19,13 +20,13 @@ from discopygal.gui.logger import Writer
 from discopygal.gui.Worker import Worker
 from discopygal.solvers.verify_paths import verify_paths
 from discopygal.geometry_utils.display_arrangement import display_arrangement
-
+from smooth_path import get_angle_of_point, get_smooth_path
 from solver_viewer_gui import Ui_MainWindow, Ui_dialog, About_Dialog
 
 
 WINDOW_TITLE = "DiscoPygal Solver Viewer"
 DEFAULT_ZOOM = 30
-DEFAULT_SCENE = "corridor_scene.json" # "slalom_scene.json" # "simple_scene.json" # "obs_scene.json" #  "small_scene.json"
+DEFAULT_SCENE ="corridor_scene.json"#"small_scene.json"# # "slalom_scene.json" # "simple_scene.json" # "obs_scene.json" #
 DEFAULT_SOLVER = "prm.py"
 DEFAULT_DISC_SIZE = 0.01
 
@@ -159,6 +160,8 @@ class SolverViewerGUI(Ui_MainWindow):
         self.actionQuit.triggered.connect(lambda: sys.exit(0))
         self.actionVerify.triggered.connect(self.verify_paths)
 
+        self.paths_created = False
+        self.smooth_path = None
         self.run_default_scene()
 
 
@@ -287,11 +290,11 @@ class SolverViewerGUI(Ui_MainWindow):
         """
         Toggle paths button
         """
-
         if len(self.path_vertices) > 0 or len(self.path_vetices_optimized) > 0:
             self.clear_paths()
         else:
             self.draw_both_paths(optimize)
+
 
     def anim_finished(self):
         """
@@ -360,14 +363,16 @@ class SolverViewerGUI(Ui_MainWindow):
                     if (x1,y1) != (x2,y2):
                         edges.append(self.add_segment( x1, y1, x2, y2,color))
 
+
+
     def draw_both_paths(self,optimize):
         """
         Draw both paths (if exist) (regular and optimized)
         """
-        if optimize:
-            self.draw_path(self.paths_optimized, self.path_vetices_optimized, self.path_edges_optimized, QtCore.Qt.green)
-        else:
-            self.draw_path(self.paths, self.path_vertices, self.path_edges, QtCore.Qt.magenta)
+
+        self.draw_path(self.paths_optimized, self.path_vetices_optimized, self.path_edges_optimized, QtCore.Qt.green)
+        self.draw_path(self.paths, self.path_vertices, self.path_edges, QtCore.Qt.magenta)
+
 
     def clear_paths(self):
         """
@@ -381,6 +386,7 @@ class SolverViewerGUI(Ui_MainWindow):
         self.path_vetices_optimized.clear()
         self.path_edges.clear()
         self.path_edges_optimized.clear()
+        print("CLEAR?! WHO DID THAT")
 
     def get_solver_args(self):
         """
@@ -404,7 +410,9 @@ class SolverViewerGUI(Ui_MainWindow):
         solver.set_verbose(self.writer)
         solver.load_scene(self.discopygal_scene)
         #self.paths = solver.solve()
+        print("ABOUT TO CALL SOLVE.SOLVE()")
         self.paths, self.paths_optimized = solver.solve()
+        print("HERE")
         self.solver_graph = solver.get_graph()
         self.solver_arrangement = solver.get_arrangement()
 
@@ -420,6 +428,7 @@ class SolverViewerGUI(Ui_MainWindow):
         self.disable_toolbar()
         self.worker = Worker(self.solve_thread)
         self.worker.signals.finished.connect(self.solver_done)
+        self.paths_created = False
         self.threadpool.start(self.worker)
 
     def disable_toolbar(self):
@@ -428,11 +437,38 @@ class SolverViewerGUI(Ui_MainWindow):
         """
         self.toolBar.setEnabled(False)
 
+    def add_smooth_path_to_scene(self):
+        for i in range(len(self.smooth_path)):
+            if type(self.smooth_path[i]) is Ker.Circle_2:
+                c = self.smooth_path[i]
+                prev_seg = self.smooth_path[i - 1]
+                next_seg = self.smooth_path[i + 1]
+                r = math.sqrt(c.squared_radius().to_double())
+                center = c.center()
+                arc_source_angle = get_angle_of_point(c, prev_seg.target())
+                arc_target_angle = get_angle_of_point(c, next_seg.source())
+
+                self.add_circle_segment(r, center.x().to_double(), center.y().to_double(),
+                                           start_angle=arc_source_angle, end_angle=arc_target_angle,
+                                           clockwise=(c.orientation() == Ker.CLOCKWISE))
+            else:
+                seg = self.smooth_path[i]
+                if seg.squared_length() > FT(0.0001):
+                    self.add_segment(seg.source().x().to_double(), seg.source().y().to_double(),
+                                        seg.target().x().to_double(), seg.target().y().to_double())
+
     def solver_done(self):
         """
         Enable icons on the toolbar after done running
         """
         self.toolBar.setEnabled(True)
+        print("SOLVER DONE!")
+        self.smooth_path = get_smooth_path(self, use_cd=False)
+        self.add_smooth_path_to_scene()
+        self.toggle_paths(True)
+        self.paths_created = True
+
+
 
     def select_solver(self, solver_name, default=False):
         """
