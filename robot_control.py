@@ -71,7 +71,7 @@ class RobotControl:
             time_for_action += t
         return time_for_action
 
-    def glide_smoothly(self, start_speed, end_speed, distance,  func:Any, oposite_func:Any ,intervals=30,should_stop=False):
+    def glide_smoothly(self, start_speed, end_speed, distance,  func:Any = math.exp, oposite_func:Any=math.log ,intervals=30,should_stop=False):
         """
         glide through start_speed (m/s) to end_speed (m/s) whithin distance(m)
         intervals are the number of speed changes the robot will make

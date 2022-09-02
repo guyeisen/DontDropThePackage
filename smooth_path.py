@@ -182,8 +182,7 @@ def get_smooth_path(gui, use_cd=True):
 
     # -- get the collision_detector object: --
     robot = gui.discopygal_scene.robots[0]
-    path = None
-    path = gui.paths_optimized.paths.get(robot)
+    path = gui.paths_optimized.paths[robot]
     prm = gui.solver
     collision_detector : ObjectCollisionDetection = prm.collision_detection[robot]
 

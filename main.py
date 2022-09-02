@@ -249,7 +249,7 @@ def get_robot():
             print("GOT ERROR CONNECTING, TRYING AGAIN")
     print("ROBOT CONNECTED")
     time.sleep(10)
-    return robot
+    return control
 
 def testings(control):
     control.glide_smoothly(start_speed=0.0, end_speed=1.5, distance=5,func=lambda x:x, oposite_func=lambda x:x)
