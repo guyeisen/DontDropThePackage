@@ -278,6 +278,8 @@ class PRM(Solver):
             return PathCollection(), PathCollection()
         if not nx.algorithms.has_path(self.roadmap_optimized, self.start_opt, self.end_opt):
             print("MY BUG")
+            print('No path found...', file=self.writer)
+            return PathCollection(), PathCollection()
         print("1")
         # Convert from a sequence of Point_d points to PathCollection
         try:
