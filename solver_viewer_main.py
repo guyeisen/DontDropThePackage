@@ -12,6 +12,8 @@ from typing import List
 from PyQt5 import QtWidgets
 from discopygal.gui import RDisc
 
+
+
 sys.path.append('./src')
 
 from discopygal.solvers import *
@@ -423,6 +425,7 @@ class SolverViewerGUI(Ui_MainWindow):
         This method is called by the solve button.
         Run the MP solver in parallel to the app.
         """
+        from main import finished
         if self.solver_class is None:
             return
         self.disable_toolbar()
@@ -461,12 +464,18 @@ class SolverViewerGUI(Ui_MainWindow):
         """
         Enable icons on the toolbar after done running
         """
-        self.toolBar.setEnabled(True)
+        from main import finished
         print("SOLVER DONE!")
+        if not self.paths_optimized.paths:
+            self.toolBar.setEnabled(True)
+            return
+        print(self.paths_optimized.paths)
         self.smooth_path = get_smooth_path(self, use_cd=False)
         self.add_smooth_path_to_scene()
         self.toggle_paths(True)
         self.paths_created = True
+        finished(self.smooth_path)
+        self.toolBar.setEnabled(True)
 
 
 

@@ -20,6 +20,7 @@ from discopygal.geometry_utils import conversions
 import collision_detection
 
 #from smooth_path import get_circle
+from error_handling import PathNotFoundException
 from smooth_path import get_circle, get_angle
 
 lock = threading.Lock()
@@ -231,7 +232,7 @@ class PRM(Solver):
             if opt_point in dic_optPoint_to_optPoint_of_neighbor:
                 neigh = dic_optPoint_to_optPoint_of_neighbor[opt_point]
                 if opt_point != neigh:
-                    self.roadmap_optimized.add_edge(opt_point, neigh, weight=0)#self.metric.dist(opt_point.point, neigh.point).to_double())
+                    self.roadmap_optimized.add_edge(opt_point, neigh, weight=self.metric.dist(opt_point.point, neigh.point).to_double())
                     dic_optPoint_to_optPoint_of_neighbor.pop(opt_point, False)
                     dic_optPoint_to_optPoint_of_neighbor.pop(neigh, False)
         print("HEY!")
@@ -246,10 +247,14 @@ class PRM(Solver):
         if v0 != v1 and v1 != v2:
             c = get_circle(v0, v1, v2)
             r_squre= c.squared_radius().to_double()
-            r_squre = r_squre
+            r_squre = math.sqrt(r_squre)
             angle = get_angle(v0,v1,v2)
-            weigh =0
-            self.roadmap_optimized.add_edge(p1, p2,weight=1/(1+angle))
+            if angle < 0:
+                print("HAVE NEGATIVE ANGLE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            factor = 1+angle
+            func1 = (angle**2)/(2*math.pi) - angle + math.pi/2
+            func =  func1 if angle >2.5 else 5/(1+angle)
+            self.roadmap_optimized.add_edge(p1, p2,weight=func)
         else:
             self.roadmap_optimized.add_edge(p1,p2,weight=0)
     def _print_angles(self,points:List[PathPoint]):
@@ -266,20 +271,29 @@ class PRM(Solver):
         :return: path collection of motion planning
         :rtype: class:'PathCollection'
         """
+
         if not nx.algorithms.has_path(self.roadmap, self.start, self.end):
             if self.verbose:
                 print('No path found...', file=self.writer)
             return PathCollection(), PathCollection()
-
+        if not nx.algorithms.has_path(self.roadmap_optimized, self.start_opt, self.end_opt):
+            print("MY BUG")
+        print("1")
         # Convert from a sequence of Point_d points to PathCollection
-        tensor_path = nx.algorithms.shortest_path(self.roadmap, self.start, self.end, weight='weight')
-        tensor_path_optimized = nx.algorithms.shortest_path(self.roadmap_optimized,self.start_opt, self.end_opt ,weight='weight' )
+        try:
+            tensor_path = nx.algorithms.shortest_path(self.roadmap, self.start, self.end, weight='weight')
+            tensor_path_optimized = nx.algorithms.shortest_path(self.roadmap_optimized,self.start_opt, self.end_opt ,weight='weight' )
+        except Exception as e:
+            print("Exception occured during shortest path calc")
+            print(repr(e))
+            raise PathNotFoundException
         path_collection = PathCollection()
         reset = {}
-        path_collection_optimized = PathCollection(paths=reset) #PathCollection is defined with defalt argument set to {}! THAT MEAN ALL PATHCOLLECTION INSTANCES WILL SHARE THE SAME DIC!
+        path_collection_optimized = PathCollection(paths=reset) #PathCollection is defined with default argument set to {}! THAT MEAN ALL PATHCOLLECTION INSTANCES WILL SHARE THE SAME DIC!
         for i, robot in enumerate(self.scene.robots):
             points = []
             points_optimized = []
+            k = 0
             for point in tensor_path:
                 points.append(PathPoint(Point_2(point[2 * i], point[2 * i + 1])))
             print("SHORTEST:")

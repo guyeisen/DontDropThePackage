@@ -25,7 +25,8 @@ from solver_viewer_main import SolverViewerGUI
 
 DEFAULT_SCENE = "small_scene.json"
 
-class EnviromentConfigurations():
+
+class EnviromentConfigurations:
     def __init__(self):
         self.app = QtWidgets.QApplication(sys.argv)
         self.gui = SolverViewerGUI()
@@ -248,8 +249,8 @@ def get_robot():
         except Exception as e:
             print("GOT ERROR CONNECTING, TRYING AGAIN")
     print("ROBOT CONNECTED")
-    time.sleep(10)
-    return robot
+    #time.sleep(10)
+    return control
 
 def testings(control):
     control.glide_smoothly(start_speed=0.0, end_speed=1.5, distance=5,func=lambda x:x, oposite_func=lambda x:x)
@@ -325,14 +326,33 @@ def print_smooth_path(smooth_path):
             seg = smooth_path[i]
             print(f"seg_{i} -- {seg}\n")
 
-
+def robot_tests(control):
+    speed = 0.9
+    end_speed = 0.0
+    R = 2
+    control.glide_smoothly(start_speed=0.0, end_speed=speed, distance=1, func=lambda x: x, oposite_func=lambda x: x)
+    # control.glide_smoothly(start_speed=0.0, end_speed=1.5, distance=5, func=math.exp, oposite_func=math.log)
+    control.move_circle_Husband(speed=speed, R=R, theta=math.pi,circle_orient=Ker.CLOCKWISE,should_stop=False)
+    control.glide_smoothly(start_speed=speed, end_speed=end_speed, distance=0.2, func=lambda x: x, oposite_func=lambda x: x,intervals=7)
+    #control.move_straight_exact(distance=1, speed=end_speed)
+    # control.move_straight_exact(distance=2, speed=0.6)
+    # control.begin_slowly_to_speed(speed=0.6)
+    # control.move_straight_exact(distance=0.6, speed=0.5)
+    end_robot(control)
 # -------------------------------------------- main: -------------------------------------------------------
+def finished(path):
+    print("IM BACK TO MAIN")
+    control: RobotControl = get_robot()
+    robot_tests(control)
 
 if __name__ == '__main__':
     try:
-        # control:RobotControl = get_robot()
+        #control:RobotControl = get_robot()
+        #robot_tests(control)
         #testings(control)
         env = EnviromentConfigurations()
+        #env.gui.worker.signals.finished.connect()
+        print("FINISH")
         #draw_paths(env,optimize=True)
 
         # while env.gui.smooth_path is None:

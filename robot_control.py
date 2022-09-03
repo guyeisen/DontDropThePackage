@@ -47,7 +47,7 @@ class RobotControl:
         """runs the given path"""
         for section in path:
             if section.isCircle:
-                self.move_circle_Husband(R=section.raduis) #NEED TO DETERMINE SPEED
+                self.move_circle_Husband(R=section.radius) #NEED TO DETERMINE SPEED
             if not section.isCircle:
                 self.move_straight_exact(distance=section.distance) #NEED TO DETERMINE SPEED
 
@@ -71,7 +71,7 @@ class RobotControl:
             time_for_action += t
         return time_for_action
 
-    def glide_smoothly(self, start_speed, end_speed, distance,  func:Any, oposite_func:Any ,intervals=30,should_stop=False):
+    def glide_smoothly(self, start_speed, end_speed, distance,  func:Any = math.exp, oposite_func:Any = math.log ,intervals=30,should_stop=False):
         """
         glide through start_speed (m/s) to end_speed (m/s) whithin distance(m)
         intervals are the number of speed changes the robot will make
@@ -80,15 +80,15 @@ class RobotControl:
         feature: WILL NOT stop at the end of the run. possibly will need to change this.
         """
         S = np.linspace(start=func(start_speed), stop=func(end_speed), num=int(intervals))
-        print(S)
+        #print(S)
         speeds = [oposite_func(s) for s in S]
-        print(speeds)
+        #print(speeds)
         for i, s in enumerate(speeds):
             if s==0:
                 continue
             rpm = speed_to_rpm(s)
             t = distance/(intervals*s)
-            print(f"rpm: {rpm} for {t}s")
+            #print(f"rpm: {rpm} for {t}s")
             if i == len(speeds) - 1:
                 self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm,timeout=t,prevent_stop_factor=1 )
             else:
