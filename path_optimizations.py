@@ -129,6 +129,7 @@ def get_max_seg_start_speed(end_speed, max_linear_a, seg_len):
 
 # ------------------------------- parse_path2: -------------------------------------------
 def parse_path2(smooth_path):
+    from smooth_path import get_angle_of_point
     """ assume path is list of segments and circles that connect each segment to the other
         speed/acceleration should be determined afterwards!
         """
@@ -148,22 +149,30 @@ def parse_path2(smooth_path):
             prev_seg = smooth_path[i - 1]
             next_seg = smooth_path[i + 1]
             circle_sec = PathSection(curr_circle)
-            circle_sec.angle_start = smooth_path.get_angle_of_point(curr_circle, prev_seg.target())
-            circle_sec.angle_end = smooth_path.get_angle_of_point(curr_circle, next_seg.source())
+            circle_sec.angle_start = get_angle_of_point(curr_circle, prev_seg.target())
+            circle_sec.angle_end = get_angle_of_point(curr_circle, next_seg.source())
             circle_sec.arc_angle = circle_sec.angle_end - circle_sec.angle_start
 
-            # previous segment:
+            # next segment:
             next_seg_sec = PathSection(smooth_path[i + 1])
+            if next_seg_sec.distance == 0:
+                # change the current circle speed to be equal to the next circle:
+                circle_sec.speed_start = circle_sec.speed_end = next_circle_sec.speed_start
+                next_circle_sec = circle_sec
+                path_for_robot = [circle_sec, next_seg_sec] + path_for_robot
+                continue
             next_seg_sec.speed_start = circle_sec.speed_end
+            # last segment:
             if i == len(smooth_path)-2:
                 next_seg_sec.is_last_movement = True
             next_seg_sec.speed_end = 0 if next_seg_sec.is_last_movement else next_circle_sec.speed_start
             next_seg_sec.full_acceleration = get_linear_acceleration(next_seg_sec.speed_start, next_seg_sec.speed_end, next_seg_sec.distance)
+            # full acceleration accedes max acceleration:
             if next_seg_sec.full_acceleration > max_linear_a:
                 max_seg_start_speed = get_max_seg_start_speed(next_seg_sec.speed_end, max_linear_a, next_seg_sec.distance)
                 next_seg_sec.speed_start = max_seg_start_speed
-                next_seg_sec.speed_middle = (next_seg_sec.speed_start + next_seg_sec.speed_end) / next_seg_sec.mid_fraction
-                circle_sec.speed_start = circle_sec.speed_end = next_circle_sec.speed_start
+                next_seg_sec.speed_middle = (next_seg_sec.speed_start + next_seg_sec.speed_end) * next_seg_sec.mid_fraction
+                circle_sec.speed_start = circle_sec.speed_end = max_seg_start_speed
             # set higher middle speed to segment:
             else:
                 next_seg_sec.speed_middle = get_max_seg_start_speed(next_seg_sec.speed_end, max_linear_a, next_seg_sec.part2_dis)
@@ -179,6 +188,10 @@ def parse_path2(smooth_path):
         first_seg_sec.is_first_movement = True
         first_seg_sec.speed_start = 0
         first_seg_sec.speed_end = next_circle_sec.speed_start
+        first_seg_sec.speed_middle = (first_seg_sec.speed_start + first_seg_sec.speed_end) * first_seg_sec.mid_fraction
+
+        first_seg_sec.full_acceleration = get_linear_acceleration(first_seg_sec.speed_start, first_seg_sec.speed_end, first_seg_sec.distance)
+
         path_for_robot = [first_seg_sec] + path_for_robot
 
     return path_for_robot

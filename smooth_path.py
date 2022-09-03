@@ -82,8 +82,7 @@ def get_arc_source_and_target(p1, p2, p3):
 
     return source, target
 
-# ---------------------------- angle_to_point: ---------------------------------
-
+# ---------------------------- get_angle_of_point: ---------------------------------
 def get_angle_of_point(circle, point):
     center = circle.center()
     xc = center.x().to_double()

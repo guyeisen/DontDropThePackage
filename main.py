@@ -231,14 +231,14 @@ def run_path(control: RobotControl, path):
         print(f'Angle: {angle}, Distance: {distance}')
         control.rotate_and_go(angle, distance)
 
-def slalum(control: RobotControl, rpm):
-    control.glide_smoothly(start_speed=0.0, end_speed=rpm, distance=0.6)
-    control.move_circle_Husband(speed=rpm, R=0.3, theta=math.pi, circle_orient=Ker.CLOCKWISE)
-    control.move_straight_exact(distance=0.6, speed=rpm)
-    control.move_circle_Husband(speed=rpm, R=0.3, theta=math.pi, circle_orient=Ker.COUNTERCLOCKWISE)
-    control.move_straight_exact(distance=0.6, speed=rpm)
-    control.move_circle_Husband(speed=rpm, R=0.3, theta=math.pi, circle_orient=Ker.CLOCKWISE)
-    control.glide_smoothly(start_speed=rpm, end_speed=0.0, distance=0.6)
+def slalum(control: RobotControl, speed):
+    control.glide_smoothly(start_speed=0.0, end_speed=speed, distance=0.6)
+    control.move_circle_Husband(speed=speed, R=0.3, theta=math.pi, circle_orient=Ker.CLOCKWISE)
+    control.move_straight_exact(distance=0.6, speed=speed)
+    control.move_circle_Husband(speed=speed, R=0.3, theta=math.pi, circle_orient=Ker.COUNTERCLOCKWISE)
+    control.move_straight_exact(distance=0.6, speed=speed)
+    control.move_circle_Husband(speed=speed, R=0.3, theta=math.pi, circle_orient=Ker.CLOCKWISE)
+    control.glide_smoothly(start_speed=speed, end_speed=0.0, distance=0.6)
 
 
 def get_robot():
@@ -260,7 +260,7 @@ def testings(control):
     control.begin_slowly_to_speed(speed=0.6)
     control.move_straight_exact(distance=0.6, speed=0.5)
 
-    slalum(control, rpm=0.3)
+    slalum(control, speed=0.3)
 
     control.move_circ_2(R=1,speed=0.5,alpha=0)
     control.begin_slowly_to_speed(0.3)
