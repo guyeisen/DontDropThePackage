@@ -7,10 +7,12 @@ from discopygal.bindings import *
 
 from rdp import rdp
 
+
 def douglas_poiker(points):
     """returns optimaized list of Point_2 according to douglas poiker algorithm"""
-    #TODO
+    # TODO
     pass
+
 
 def parse_path(rays: List[Ker.Ray_2], last_point: Point_2):
     """
@@ -26,91 +28,157 @@ def parse_path(rays: List[Ker.Ray_2], last_point: Point_2):
     p1 = np.zeros(2)
     p2 = np.zeros(2)
     print(f"Calculated {len(rays)} rays")
-    for i in range(1, len(rays)-1):
-        p0[0] = rays[i-1].source().x().to_double()
-        p0[1]= rays[i-1].source().y().to_double()
+    for i in range(1, len(rays) - 1):
+        p0[0] = rays[i - 1].source().x().to_double()
+        p0[1] = rays[i - 1].source().y().to_double()
         p1[0] = rays[i].source().x().to_double()
-        p1[1]= rays[i].source().y().to_double()
+        p1[1] = rays[i].source().y().to_double()
         p2[0] = rays[i + 1].source().x().to_double()
         p2[1] = rays[i + 1].source().y().to_double()
-        #if p2[0]
-        prev_distance = np.linalg.norm(p1-p0)
-        curr_distance = np.linalg.norm(p2-p1)
-        #time_for_seg = time_per_length(distance)
+        # if p2[0]
+        prev_distance = np.linalg.norm(p1 - p0)
+        curr_distance = np.linalg.norm(p2 - p1)
+        # time_for_seg = time_per_length(distance)
         angle1 = get_rad_from_direction(rays[i].direction())
         angle0 = get_rad_from_direction(rays[i - 1].direction())
         angle = min(angle1 - angle0, np.pi - (angle1 - angle0))
-        if i == 1:#first iteration
+        if i == 1:  # first iteration
             print(f'First Angle: {math.degrees(angle0)}, Distance: {prev_distance}')
-            angle_distance_list.append((math.degrees(angle0),prev_distance))
+            angle_distance_list.append((math.degrees(angle0), prev_distance))
         print(f'Angle: {math.degrees(angle)}, Distance: {curr_distance}')
 
         angle_distance_list.append((math.degrees(angle), curr_distance))
-        if i==len(rays)-2:
+        if i == len(rays) - 2:
             last_p = np.zeros(2)
             last_p[0] = last_point.x().to_double()
             last_p[1] = last_point.y().to_double()
-            distance = np.linalg.norm(last_p-p2)
-            angle2 = get_rad_from_direction(rays[i+1].direction())
+            distance = np.linalg.norm(last_p - p2)
+            angle2 = get_rad_from_direction(rays[i + 1].direction())
             angle = min(angle2 - angle1, np.pi - (angle2 - angle1))
             print(f'Last Angle: {math.degrees(angle)}, Distance: {distance}')
             angle_distance_list.append((math.degrees(angle), distance))
     return angle_distance_list
 
+
+# -------------------------------- class PathSection -----------------------------
 class PathSection:
     def __init__(self, ker_element):
         """contains all the info that the robot needs to move that section"""
-        self.KerElement = None
-        self.isCircle = False
-
-        self.isGlide = False #if true, means speed is changing in this segment
-        self.intervals = 20
+        self.KerElement = ker_element
 
         self.time = 0
         self.distance = 0
+        self.mid_fraction = 0.5
+        self.part1_dis = 0
+        self.part2_dis = 0
+
+        self.isCircle = False
         self.arc_angle = 0
-        self.raduis = 0
+        self.radius = 0
 
-        self.speed_start = 0 #both speeds should be the same if this is not glide motion
+        self.isGlide = False  # if true, means speed is changing in this segment
+        self.intervals = 20
+        # start and end speeds should be the same if this is not glide motion:
+        self.speed_start = 0
+        self.speed_middle = 0
         self.speed_end = 0
+        self.full_acceleration = 0 # for segments - acceleration considering only the start and end speeds
 
-        self.acceleration = 0
+        self.angle_start = 0  # angle at start of movement. for straight segment this is simply its angle
+        self.angle_end = 0  # angle at the end of movement. for segments, it should be the same as angke_start
 
-        self.angle_start = 0 #angle at start of movement. for straight segment this is simply its angle
-        self.angle_end = 0 #angle at the end of movement (should be the same as start for segment)
-
-        self.should_stop = True #timeout == sleep time ---> full stop at the end of movement.
-                                 #if sleep time is less than timeout, movement will continue (without force)
+        self.should_stop = True  # timeout == sleep time ---> full stop at the end of movement.
+        # if sleep time is less than timeout, movement will continue (without force)
         self.is_first_movement = False
         self.is_last_movement = False
+
+        # --- circle: ---
+        if type(ker_element) is Circle_2:
+            self.isCircle = True
+            self.radius = math.sqrt(ker_element.squared_radius().to_double())
+            self.speed_start = self.speed_end = self.get_max_tangential_speed()
+
+        # --- segment: ---
+        elif type(ker_element) is Segment_2:
+            self.isGlide = True  # if true, means speed is changing in this segment
+            self.distance = math.sqrt(ker_element.squared_length().to_double())
+            self.part1_dis = self.mid_fraction * self.distance
+            self.part2_dis = self.distance - self.part1_dis
+            self.angle_start = self.angle_end = math.degrees(get_rad_from_direction(ker_element.direction()))
+        else:
+            raise "ker element is neither Circle_2 not Segment_2"
+
+    def get_max_tangential_speed(self):
+        if not self.isCircle:
+            raise "trying to calculate tangential speed of non circle section"
+        empiric_v = 0.5
+        empiric_r = 0.6
+        max_center_a = (empiric_v * empiric_v) / empiric_r
+        max_tangential_speed = math.sqrt(max_center_a * self.radius)
+        return max_tangential_speed
+
 
 def get_rad_from_direction(direction: Direction_2):
     return math.atan2(direction.dy().to_double(), direction.dx().to_double())
 
-def parse_path2(path):
+def get_linear_acceleration(start_speed, end_speed, seg_len):
+    return ((end_speed**2) - (start_speed**2)) / (2 * seg_len)
+
+def get_max_seg_start_speed(end_speed, max_linear_a, seg_len):
+    return math.sqrt((end_speed ** 2) - (2 * max_linear_a * seg_len))
+
+# ------------------------------- parse_path2: -------------------------------------------
+def parse_path2(smooth_path):
     """ assume path is list of segments and circles that connect each segment to the other
         speed/acceleration should be determined afterwards!
         """
-    path_for_robot=[]
-    for i, ker_item in enumerate(path):
-        section = PathSection(ker_item)
-        if i == 0:
-            section.is_first_movement = True
-        if i == len(path)-1:
-            section.is_last_movement = True
+    # get empirical max linear acceleration:
+    empiric_start_speed = 0.9
+    empiric_end_speed = 0.1
+    empiric_seg_len = 0.2
+    max_linear_a = get_linear_acceleration(empiric_start_speed, empiric_end_speed, empiric_seg_len)
 
-        if type(ker_item) is Segment_2:
-            section.isCircle = False
-            section.distance = math.sqrt(ker_item.squared_length().to_double())
-            section.angle_start = math.degrees(get_rad_from_direction(ker_item.direction()))
+    path_for_robot = []
+    for i in range(len(smooth_path)-2, 0, -1):
 
-        elif type(ker_item) is Circle_2:#its a circle
-            section.isCircle = True
-            section.raduis = math.sqrt(ker_item.squared_radius().to_double())
-            section.arc_angle = 0#to complete. not sure how to get it
+        if type(smooth_path[i]) is Circle_2:
 
+            # current circle:
+            curr_circle = smooth_path[i]
+            prev_seg = smooth_path[i - 1]
+            next_seg = smooth_path[i + 1]
+            circle_sec = PathSection(curr_circle)
+            circle_sec.angle_start = smooth_path.get_angle_of_point(curr_circle, prev_seg.target())
+            circle_sec.angle_end = smooth_path.get_angle_of_point(curr_circle, next_seg.source())
+            circle_sec.arc_angle = circle_sec.angle_end - circle_sec.angle_start
 
+            # previous segment:
+            next_seg_sec = PathSection(smooth_path[i + 1])
+            next_seg_sec.speed_start = circle_sec.speed_end
+            if i == len(smooth_path)-2:
+                next_seg_sec.is_last_movement = True
+            next_seg_sec.speed_end = 0 if next_seg_sec.is_last_movement else next_circle_sec.speed_start
+            next_seg_sec.full_acceleration = get_linear_acceleration(next_seg_sec.speed_start, next_seg_sec.speed_end, next_seg_sec.distance)
+            if next_seg_sec.full_acceleration > max_linear_a:
+                max_seg_start_speed = get_max_seg_start_speed(next_seg_sec.speed_end, max_linear_a, next_seg_sec.distance)
+                next_seg_sec.speed_start = max_seg_start_speed
+                next_seg_sec.speed_middle = (next_seg_sec.speed_start + next_seg_sec.speed_end) / next_seg_sec.mid_fraction
+                circle_sec.speed_start = circle_sec.speed_end = next_circle_sec.speed_start
+            # set higher middle speed to segment:
+            else:
+                next_seg_sec.speed_middle = get_max_seg_start_speed(next_seg_sec.speed_end, max_linear_a, next_seg_sec.part2_dis)
 
-        path_for_robot.append(section)
+            # saving pointer to the current circle section for next iteration:
+            next_circle_sec = circle_sec
+
+            # append current circle and next segment sections at the beginning of the path:
+            path_for_robot = [circle_sec, next_seg_sec] + path_for_robot
+
+        # first segment section:
+        first_seg_sec = PathSection(smooth_path[0])
+        first_seg_sec.is_first_movement = True
+        first_seg_sec.speed_start = 0
+        first_seg_sec.speed_end = next_circle_sec.speed_start
+        path_for_robot = [first_seg_sec] + path_for_robot
 
     return path_for_robot

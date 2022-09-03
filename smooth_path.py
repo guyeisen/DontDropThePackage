@@ -56,7 +56,7 @@ def get_angle(p1,p2,p3):
 
 # ----------------------------- get_arc_source_and_target: ------------------------------------
 def get_arc_source_and_target(p1, p2, p3):
-    ''' input = three Point_2: segment_1 source, segment1_traget, segment_2 target
+    ''' input = three points: segment1_source, segment1_traget, segment2_target
         output = arc source and target points
         (the closer point out of p1 and p2 and a point on the other segment that is at the same distance as the closer point from p2)'''
     s1 = Segment_2(p1, p2)
