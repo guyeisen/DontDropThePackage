@@ -12,7 +12,8 @@ from typing import List
 from PyQt5 import QtWidgets
 from discopygal.gui import RDisc
 
-
+from collision_detection import ObjectCollisionDetection
+from path_optimizations import douglas_peuker
 
 sys.path.append('./src')
 
@@ -28,7 +29,7 @@ from solver_viewer_gui import Ui_MainWindow, Ui_dialog, About_Dialog
 
 WINDOW_TITLE = "DiscoPygal Solver Viewer"
 DEFAULT_ZOOM = 30
-DEFAULT_SCENE ="corridor_scene.json"#"small_scene.json"# # "slalom_scene.json" # "simple_scene.json" # "obs_scene.json" #
+DEFAULT_SCENE ="small_scene.json"#"corridor_scene.json"## # "slalom_scene.json" # "simple_scene.json" # "obs_scene.json" #
 DEFAULT_SOLVER = "prm.py"
 DEFAULT_DISC_SIZE = 0.01
 
@@ -371,9 +372,9 @@ class SolverViewerGUI(Ui_MainWindow):
         """
         Draw both paths (if exist) (regular and optimized)
         """
-
-        self.draw_path(self.paths_optimized, self.path_vetices_optimized, self.path_edges_optimized, QtCore.Qt.green)
         self.draw_path(self.paths, self.path_vertices, self.path_edges, QtCore.Qt.magenta)
+        self.draw_path(self.paths_optimized, self.path_vetices_optimized, self.path_edges_optimized, QtCore.Qt.green)
+
 
 
     def clear_paths(self):
@@ -469,13 +470,21 @@ class SolverViewerGUI(Ui_MainWindow):
         if not self.paths_optimized.paths:
             self.toolBar.setEnabled(True)
             return
-        print(self.paths_optimized.paths)
+        robot = self.discopygal_scene.robots[0]
+        prm = self.solver
+        collision_detector: ObjectCollisionDetection = prm.collision_detection[robot]
+
+        self.paths_optimized.paths[robot].points = douglas_peuker(self.paths_optimized.paths[robot].points ,collision_detector)
+        self.paths_optimized.paths[robot].points = douglas_peuker(self.paths_optimized.paths[robot].points,
+                                                                  collision_detector)
         self.smooth_path = get_smooth_path(self, use_cd=False)
         self.add_smooth_path_to_scene()
         self.toggle_paths(True)
         self.paths_created = True
         finished(self.smooth_path)
         self.toolBar.setEnabled(True)
+
+
 
 
 
