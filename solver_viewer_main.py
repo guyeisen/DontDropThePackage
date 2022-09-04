@@ -12,7 +12,8 @@ from typing import List
 from PyQt5 import QtWidgets
 from discopygal.gui import RDisc
 
-
+from collision_detection import ObjectCollisionDetection
+from path_optimizations import douglas_peuker
 
 sys.path.append('./src')
 
@@ -371,9 +372,9 @@ class SolverViewerGUI(Ui_MainWindow):
         """
         Draw both paths (if exist) (regular and optimized)
         """
-
-        self.draw_path(self.paths_optimized, self.path_vetices_optimized, self.path_edges_optimized, QtCore.Qt.green)
         self.draw_path(self.paths, self.path_vertices, self.path_edges, QtCore.Qt.magenta)
+        self.draw_path(self.paths_optimized, self.path_vetices_optimized, self.path_edges_optimized, QtCore.Qt.green)
+
 
 
     def clear_paths(self):
@@ -468,8 +469,14 @@ class SolverViewerGUI(Ui_MainWindow):
         if not self.paths_optimized.paths:
             self.toolBar.setEnabled(True)
             return
-        print(self.paths_optimized.paths)
-        self.smooth_path = get_smooth_path(self, use_cd=True)
+        robot = self.discopygal_scene.robots[0]
+        prm = self.solver
+        collision_detector: ObjectCollisionDetection = prm.collision_detection[robot]
+
+        self.paths_optimized.paths[robot].points = douglas_peuker(self.paths_optimized.paths[robot].points ,collision_detector)
+        self.paths_optimized.paths[robot].points = douglas_peuker(self.paths_optimized.paths[robot].points,
+                                                                  collision_detector)
+        self.smooth_path = get_smooth_path(self, use_cd=False)
         self.add_smooth_path_to_scene()
         self.toggle_paths(True)
         self.paths_created = True

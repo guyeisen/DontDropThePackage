@@ -45,11 +45,40 @@ class RobotControl:
 
     def run_path(self,path: List[PathSection]):
         """runs the given path"""
+        speed= 0.3
         for section in path:
+            if section.speed_end > 1.5 or section.speed_start > 1.5:
+                print(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT")
+                self.stop()
+            if section.isCircle and section.radius > 5:
+                print(f"radius seems weired: {section.radius} meters. STOPPING")
+                self.stop()
+                #raise Exception(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT")
+            if section.is_first_movement:
+                self.rotate(math.degrees(section.angle_end))
             if section.isCircle:
-                self.move_circle_Husband(R=section.radius) #NEED TO DETERMINE SPEED
-            if not section.isCircle:
-                self.move_straight_exact(distance=section.distance) #NEED TO DETERMINE SPEED
+
+                self.move_circle_Husband(speed=section.speed_end,
+                                         R=section.radius,
+                                         theta=section.arc_angle,
+                                         should_stop=section.should_stop,
+                                         circle_orient=section.KerElement.orientation())
+
+            if not section.isCircle and section.distance != 0:# means this is straight segment
+                if section.isGlide:
+
+                    self.glide_smoothly(start_speed=section.speed_start,
+                                        end_speed=section.speed_middle,
+                                        distance=section.part1_dis,
+                                        should_stop=section.should_stop,
+                                        intervals=3)
+                    self.glide_smoothly(start_speed=section.speed_middle,
+                                        end_speed=section.speed_end,
+                                        distance=section.part2_dis,
+                                        should_stop=section.should_stop,
+                                        intervals=3)
+                else:
+                    self.move_straight_exact(distance=section.distance,speed=section.speed_end)
 
 
     def drive_rpm(self, w1, w2, w3, w4, timeout, should_stop=True,prevent_stop_factor=0.9):
@@ -71,7 +100,7 @@ class RobotControl:
             time_for_action += t
         return time_for_action
 
-    def glide_smoothly(self, start_speed, end_speed, distance,  func:Any = math.exp, oposite_func:Any = math.log ,intervals=30,should_stop=False):
+    def glide_smoothly(self, start_speed, end_speed, distance,  func:Any = lambda x:x, oposite_func:Any = lambda x:x ,intervals=10,should_stop=False, proportion=0.8):
         """
         glide through start_speed (m/s) to end_speed (m/s) whithin distance(m)
         intervals are the number of speed changes the robot will make
@@ -79,21 +108,25 @@ class RobotControl:
         MOVES ONLY IN STRAIGHT LINE.
         feature: WILL NOT stop at the end of the run. possibly will need to change this.
         """
-        S = np.linspace(start=func(start_speed), stop=func(end_speed), num=int(intervals))
-        #print(S)
-        speeds = [oposite_func(s) for s in S]
+        if start_speed==end_speed:
+            speeds = [start_speed for i in range(intervals)]
+        else:
+            S = np.linspace(start=func(start_speed), stop=func(end_speed), num=int(intervals))
+            #print(S)
+            speeds = [oposite_func(s) for s in S]
         #print(speeds)
         for i, s in enumerate(speeds):
             if s==0:
                 continue
             rpm = speed_to_rpm(s)
-            t = distance/(intervals*s)
+            t = distance*proportion/(intervals*s)
             #print(f"rpm: {rpm} for {t}s")
             if i == len(speeds) - 1:
                 self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm,timeout=t,prevent_stop_factor=1 )
             else:
                 self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm,timeout=t)
-
+        t = distance*(1-proportion)/s
+        self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm, timeout=t, prevent_stop_factor=1)
     def begin_slowly_to_speed(self,speed, intervals=20, in_time=5):
         #TODO use the upper function
             """slowly increase speed to the wanted speed"""
@@ -111,6 +144,13 @@ class RobotControl:
                     time.sleep(0.9*in_time/intervals)
             #time.sleep(1)
 
+    def rotate(self,theta):
+        print("IM ROTAING")
+        t_theta_s100 = 2.375 * (theta / 360) * 3
+        sign = 1 if theta >= 0 else -1
+        self.ep_chassis.drive_wheels(w1=sign * 100/3, w2=sign * (-100)/3, w3=sign * (-100)/3, w4=sign * (100)/3,
+                                     timeout=sign * t_theta_s100)  # 180 deg
+        time.sleep(sign * t_theta_s100)
     def move_straight_exact(self, distance, speed=0.5):
         """distance is in meters
             speed in m/s """
@@ -159,6 +199,7 @@ class RobotControl:
         return outer, inner
 
     def move_circle_Husband(self, speed=0.3, R=0.6, theta=3*math.pi/2, should_stop=False, circle_orient=None):
+        # print(f"GOT R={R}, theta={math.degrees(theta)} in rad:{theta}, orientation: {circle_orient}")
         wanted_rpm = speed_to_rpm(speed)
         Rout = math.sqrt(((ROBOT_LENGTH / 2) - WHEEL_RADIUS) ** 2 + (R + ((ROBOT_WIDTH / 2) + WHEEL_WITDH)) ** 2)
         Rin = math.sqrt(((ROBOT_LENGTH / 2) - WHEEL_RADIUS) ** 2 + (R - ((ROBOT_WIDTH / 2) + WHEEL_WITDH)) ** 2)
@@ -166,7 +207,11 @@ class RobotControl:
         rpm_out, rpm_in = self.calc_wanted_rpms(wanted_rpm, R)
         # print(f"const: {CONST}")
         wanted_omega = speed / R
-        time_for_theta = theta/ (wanted_omega)
+        #theta = theta if theta > 0 else 2*math.pi + theta
+        if theta < -math.pi:
+            theta = 2*math.pi + theta
+        time_for_theta = math.fabs(theta/ (wanted_omega))
+
         # print(f"time for theta {math.degrees(theta)}: {time_for_theta}s RUNNING 95% - {time_for_theta*0.95}")
         # print(f"rpm_out: {rpm_out}, rpm_in: {rpm_in}")
         # print(f"Calculated radius should be: {((rpm_out + rpm_in) / (rpm_out - rpm_in))*CONST}")
