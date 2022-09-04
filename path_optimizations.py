@@ -123,7 +123,6 @@ class PathSection:
         self.radius = 0
 
         self.isGlide = False  # if true, means speed is changing in this segment
-        self.intervals = 20
         # start and end speeds should be the same if this is not glide motion:
         self.speed_start = 0
         self.speed_middle = 0
@@ -203,16 +202,24 @@ def print_robot_path(robot_path):
         else:
             seg = item.KerElement
             print(f"seg: ,        len: {round(item.distance,2)}       v0: {round(item.speed_start,2)},   v_mid: {round(item.speed_middle,2)},     vf: {round(item.speed_end,2)}")
+            part1_intervals = get_intervals_num(item.part1_dis, item.speed_start, item.speed_middle)
+            part2_intervals = get_intervals_num(item.part2_dis, item.speed_middle, item.speed_end)
+            print(f"part1 intervals: {part1_intervals},           part2 intervals: {part2_intervals},")
 
+# todo del:
+def get_intervals_num(distance, start_speed, end_speed, max_speed_jump=0.01, max_interval_len=0.03):
+    intervals_num = int(math.ceil(math.fabs(end_speed - start_speed) / max_speed_jump) + 1)
+    if distance / intervals_num < max_interval_len:
+        intervals_num = int(distance // max_interval_len)
+    if start_speed != end_speed and intervals_num < 2:
+        intervals_num = 2
+    return intervals_num
 
-# ------------------------------- parse_path2: -------------------------------------------
 
 def _calc_angle_rad(p1: Point_2, p2: Point_2):
     dx = p2.x().to_double() - p1.x().to_double()
     dy = p2.y().to_double() - p1.y().to_double()
     return math.atan2(dy, dx)
-
-
 
 def _get_Direction_2(p1: Point_2, p2: Point_2):
     dx = p2.x() - p1.x()
@@ -229,6 +236,8 @@ def gen_robot_path_from_points(points):
     rays = [Ker.Ray_2(points[i].location, _get_Direction_2(points[i].location, points[i + 1].location)) for i in range(len(points) - 1)]
     return parse_path(rays, points[len(points)-1].location)
 
+
+# ------------------------------- parse_path2: -------------------------------------------
 def parse_path2(smooth_path):
     from smooth_path import get_angle_of_point
     """ assume path is list of segments and circles that connect each segment to the other
@@ -238,7 +247,7 @@ def parse_path2(smooth_path):
     empiric_start_speed = 0.9
     empiric_end_speed = 0.1
     empiric_seg_len = 0.2
-    max_linear_a = get_linear_acceleration(empiric_start_speed, empiric_end_speed, empiric_seg_len)
+    max_linear_deceleration = get_linear_acceleration(empiric_start_speed, empiric_end_speed, empiric_seg_len)
 
     path_for_robot = []
     for i in range(len(smooth_path)-2, 0, -1):
@@ -270,14 +279,14 @@ def parse_path2(smooth_path):
             next_seg_sec.full_acceleration = get_linear_acceleration(next_seg_sec.speed_start, next_seg_sec.speed_end, next_seg_sec.distance)
 
             # full acceleration accedes max acceleration:
-            if next_seg_sec.full_acceleration < max_linear_a:
-                max_seg_start_speed = get_max_seg_start_speed(next_seg_sec.speed_end, max_linear_a, next_seg_sec.distance)
+            if next_seg_sec.full_acceleration < max_linear_deceleration:
+                max_seg_start_speed = get_max_seg_start_speed(next_seg_sec.speed_end, max_linear_deceleration, next_seg_sec.distance)
                 next_seg_sec.speed_start = max_seg_start_speed
                 next_seg_sec.speed_middle = (next_seg_sec.speed_start + next_seg_sec.speed_end) * next_seg_sec.mid_fraction
                 circle_sec.speed_start = circle_sec.speed_end = max_seg_start_speed
             # set higher middle speed to segment:
             else:
-                next_seg_sec.speed_middle = get_max_seg_start_speed(next_seg_sec.speed_end, max_linear_a, next_seg_sec.part2_dis)
+                next_seg_sec.speed_middle = get_max_seg_start_speed(next_seg_sec.speed_end, max_linear_deceleration, next_seg_sec.part2_dis)
 
             # saving pointer to the current circle section for next iteration:
             next_circle_sec = circle_sec
@@ -297,11 +306,11 @@ def parse_path2(smooth_path):
     # todo del:
     # print_smooth_path(smooth_path)
     # print_robot_path(path_for_robot)
-    first_seg_sec.angle_end = _calc_angle_rad(first_seg_sec.KerElement.source(),first_seg_sec.KerElement.target())
-    print(f"first segement angle: {math.degrees(first_seg_sec.angle_end)}")
-    for sec in path_for_robot:
-        print(f"start speed:{sec.speed_start} mid speed: {sec.speed_middle} end speed:{sec.speed_end}")
-        print(f"radius: {sec.radius}, angle: {sec.arc_angle}")
+    # first_seg_sec.angle_end = _calc_angle_rad(first_seg_sec.KerElement.source(),first_seg_sec.KerElement.target())
+    # print(f"first segement angle: {math.degrees(first_seg_sec.angle_end)}")
+    # for sec in path_for_robot:
+    #     print(f"start speed:{sec.speed_start} mid speed: {sec.speed_middle} end speed:{sec.speed_end}")
+    #     print(f"radius: {sec.radius}, angle: {sec.arc_angle}")
 
 
     return path_for_robot

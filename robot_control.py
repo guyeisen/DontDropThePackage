@@ -70,13 +70,11 @@ class RobotControl:
                     self.glide_smoothly(start_speed=section.speed_start,
                                         end_speed=section.speed_middle,
                                         distance=section.part1_dis,
-                                        should_stop=section.should_stop,
-                                        intervals=3)
+                                        should_stop=section.should_stop)
                     self.glide_smoothly(start_speed=section.speed_middle,
                                         end_speed=section.speed_end,
                                         distance=section.part2_dis,
-                                        should_stop=section.should_stop,
-                                        intervals=3)
+                                        should_stop=section.should_stop)
                 else:
                     self.move_straight_exact(distance=section.distance,speed=section.speed_end)
 
@@ -89,18 +87,27 @@ class RobotControl:
         else:
             time.sleep(prevent_stop_factor*timeout)
 
-    def get_time_for_glide(self, start_speed, end_speed, distance, intervals=20):
-        """calculate and returns the total time for glide through speeds
-            THIS DOES NOT PERFORM ANY DRIVE ACTION"""
-        time_for_action = 0
-        S = np.linspace(start=start_speed ** 2, stop=end_speed ** 2, num=int(intervals))
-        speeds = [math.sqrt(s) for s in S]
-        for i, s in enumerate(speeds):
-            t = distance / (intervals * s)
-            time_for_action += t
-        return time_for_action
+    # def get_time_for_glide(self, start_speed, end_speed, distance, intervals=20):
+    #     """calculate and returns the total time for glide through speeds
+    #         THIS DOES NOT PERFORM ANY DRIVE ACTION"""
+    #     time_for_action = 0
+    #     S = np.linspace(start=start_speed ** 2, stop=end_speed ** 2, num=int(intervals))
+    #     speeds = [math.sqrt(s) for s in S]
+    #     for i, s in enumerate(speeds):
+    #         t = distance / (intervals * s)
+    #         time_for_action += t
+    #     return time_for_action
 
-    def glide_smoothly(self, start_speed, end_speed, distance,  func:Any = lambda x:x, oposite_func:Any = lambda x:x ,intervals=10,should_stop=False, proportion=0.8):
+    def get_intervals_num(self, distance, start_speed, end_speed, max_speed_jump=0.01, max_interval_len=0.03):
+        intervals_num = int(math.ceil(math.fabs(end_speed - start_speed) / max_speed_jump) + 1)
+        if distance / intervals_num < max_interval_len:
+            intervals_num = int(distance // max_interval_len)
+        if start_speed != end_speed and intervals_num < 2:
+            intervals_num = 2
+        return intervals_num
+
+
+    def glide_smoothly(self, start_speed, end_speed, distance,  func:Any = lambda x:x, oposite_func:Any = lambda x:x ,should_stop=False, proportion=0.8):
         """
         glide through start_speed (m/s) to end_speed (m/s) whithin distance(m)
         intervals are the number of speed changes the robot will make
@@ -108,6 +115,9 @@ class RobotControl:
         MOVES ONLY IN STRAIGHT LINE.
         feature: WILL NOT stop at the end of the run. possibly will need to change this.
         """
+
+        intervals = self.get_intervals_num(distance, start_speed, end_speed)
+
         if start_speed==end_speed:
             speeds = [start_speed for i in range(intervals)]
         else:
@@ -127,22 +137,24 @@ class RobotControl:
                 self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm,timeout=t)
         t = distance*(1-proportion)/s
         self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm, timeout=t, prevent_stop_factor=1)
-    def begin_slowly_to_speed(self,speed, intervals=20, in_time=5):
-        #TODO use the upper function
-            """slowly increase speed to the wanted speed"""
-            top_rpm = speed_to_rpm(speed)
-            X = np.linspace(start=0, stop=top_rpm**2, num=int(intervals))
-            rpms = [math.sqrt(rpm) for rpm in X]
-            for i,rpm in enumerate(rpms):
-                print(f" rpm is {rpm} for {in_time/intervals}s")
-                print(i)
-                self.ep_chassis.drive_wheels(w1=rpm, w2=rpm, w3=rpm, w4=rpm, timeout=in_time/intervals)
-                if i!= len(rpms)-1:
-                    print(i)
-                    time.sleep(in_time/intervals)
-                else:
-                    time.sleep(0.9*in_time/intervals)
-            #time.sleep(1)
+
+
+    # def begin_slowly_to_speed(self,speed, intervals=20, in_time=5):
+    #     #TODO use the upper function
+    #         """slowly increase speed to the wanted speed"""
+    #         top_rpm = speed_to_rpm(speed)
+    #         X = np.linspace(start=0, stop=top_rpm**2, num=int(intervals))
+    #         rpms = [math.sqrt(rpm) for rpm in X]
+    #         for i,rpm in enumerate(rpms):
+    #             print(f" rpm is {rpm} for {in_time/intervals}s")
+    #             print(i)
+    #             self.ep_chassis.drive_wheels(w1=rpm, w2=rpm, w3=rpm, w4=rpm, timeout=in_time/intervals)
+    #             if i!= len(rpms)-1:
+    #                 print(i)
+    #                 time.sleep(in_time/intervals)
+    #             else:
+    #                 time.sleep(0.9*in_time/intervals)
+    #         #time.sleep(1)
 
     def rotate(self,theta):
         print("IM ROTAING")

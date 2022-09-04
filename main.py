@@ -274,7 +274,7 @@ def draw_paths(env, optimize=False):
     while (env.gui.paths_optimized == None):
         # print(f"Waiting for path to be created...")
         pass
-    print("Path created!")
+    print("finished path search")
     env.gui.toggle_paths(optimize)
 
 def end_robot(control):
