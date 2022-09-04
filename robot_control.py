@@ -53,7 +53,7 @@ class RobotControl:
 
 
     def drive_rpm(self, w1, w2, w3, w4, timeout, should_stop=True,prevent_stop_factor=0.9):
-        print(f"rpm: {np.average([w1,w2,w3,w4])} for {timeout}s")
+        #print(f"rpm: {np.average([w1,w2,w3,w4])} for {timeout}s")
         self.ep_chassis.drive_wheels(w1=w1, w2=w2, w3=w3, w4=w4, timeout=timeout)
         if should_stop:
             time.sleep(timeout)
@@ -162,14 +162,14 @@ class RobotControl:
         wanted_rpm = speed_to_rpm(speed)
         Rout = math.sqrt(((ROBOT_LENGTH / 2) - WHEEL_RADIUS) ** 2 + (R + ((ROBOT_WIDTH / 2) + WHEEL_WITDH)) ** 2)
         Rin = math.sqrt(((ROBOT_LENGTH / 2) - WHEEL_RADIUS) ** 2 + (R - ((ROBOT_WIDTH / 2) + WHEEL_WITDH)) ** 2)
-        print(f'Rout: {Rout}, Rin: {Rin}')
+        # print(f'Rout: {Rout}, Rin: {Rin}')
         rpm_out, rpm_in = self.calc_wanted_rpms(wanted_rpm, R)
-        print(f"const: {CONST}")
+        # print(f"const: {CONST}")
         wanted_omega = speed / R
         time_for_theta = theta/ (wanted_omega)
-        print(f"time for theta {math.degrees(theta)}: {time_for_theta}s RUNNING 95% - {time_for_theta*0.95}")
-        print(f"rpm_out: {rpm_out}, rpm_in: {rpm_in}")
-        print(f"Calculated radius should be: {((rpm_out + rpm_in) / (rpm_out - rpm_in))*CONST}")
+        # print(f"time for theta {math.degrees(theta)}: {time_for_theta}s RUNNING 95% - {time_for_theta*0.95}")
+        # print(f"rpm_out: {rpm_out}, rpm_in: {rpm_in}")
+        # print(f"Calculated radius should be: {((rpm_out + rpm_in) / (rpm_out - rpm_in))*CONST}")
         if circle_orient == Ker.CLOCKWISE:
             self.drive_rpm(w1=rpm_in, w2=rpm_out, w3=rpm_out, w4=rpm_in, timeout=time_for_theta*0.95)
         elif circle_orient == Ker.COUNTERCLOCKWISE:

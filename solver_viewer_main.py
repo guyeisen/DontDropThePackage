@@ -425,7 +425,6 @@ class SolverViewerGUI(Ui_MainWindow):
         This method is called by the solve button.
         Run the MP solver in parallel to the app.
         """
-        from main import finished
         if self.solver_class is None:
             return
         self.disable_toolbar()
@@ -470,7 +469,7 @@ class SolverViewerGUI(Ui_MainWindow):
             self.toolBar.setEnabled(True)
             return
         print(self.paths_optimized.paths)
-        self.smooth_path = get_smooth_path(self, use_cd=False)
+        self.smooth_path = get_smooth_path(self, use_cd=True)
         self.add_smooth_path_to_scene()
         self.toggle_paths(True)
         self.paths_created = True

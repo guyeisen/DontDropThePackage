@@ -127,6 +127,38 @@ def get_linear_acceleration(start_speed, end_speed, seg_len):
 def get_max_seg_start_speed(end_speed, max_linear_a, seg_len):
     return math.sqrt((end_speed ** 2) - (2 * max_linear_a * seg_len))
 
+# todo del:
+def print_smooth_path(smooth_path):
+    from smooth_path import get_angle_of_point
+    print("\nsmooth path: ")
+    for i in range(len(smooth_path)):
+        if type(smooth_path[i]) is Ker.Circle_2:
+            c = smooth_path[i]
+            r = math.sqrt(c.squared_radius().to_double())
+            prev_seg = smooth_path[i-1]
+            next_seg = smooth_path[i+1]
+            arc_source_angle = get_angle_of_point(c, prev_seg.target())
+            arc_target_angle = get_angle_of_point(c, next_seg.source())
+            # print(f"circle_{i} -- center: {c.center()} -- radius: {r} -- source_point: {prev_seg.target()} -- target_point: {next_seg.source()}"
+            #       f" \n-- start_angle: {np.rad2deg(arc_source_angle)} -- end_angle: {np.rad2deg(arc_target_angle)} -- orient: {c.orientation()}\n")
+            print(f"circle: {c}")
+        else:
+            seg = smooth_path[i]
+            print(f"seg: {seg}")
+
+# todo del:
+def print_robot_path(robot_path):
+    print("\nrobot path: ")
+    for i in range(len(robot_path)):
+        item = robot_path[i]
+        if type(item.KerElement) is Ker.Circle_2:
+            c = item.KerElement
+            print(f"circle: ,        r: {round(item.radius, 2)}       v: {round(item.speed_start, 2)}")
+        else:
+            seg = item.KerElement
+            print(f"seg: ,        len: {round(item.distance,2)}       v0: {round(item.speed_start,2)},   v_mid: {round(item.speed_middle,2)},     vf: {round(item.speed_end,2)}")
+
+
 # ------------------------------- parse_path2: -------------------------------------------
 def parse_path2(smooth_path):
     from smooth_path import get_angle_of_point
@@ -167,8 +199,9 @@ def parse_path2(smooth_path):
                 next_seg_sec.is_last_movement = True
             next_seg_sec.speed_end = 0 if next_seg_sec.is_last_movement else next_circle_sec.speed_start
             next_seg_sec.full_acceleration = get_linear_acceleration(next_seg_sec.speed_start, next_seg_sec.speed_end, next_seg_sec.distance)
+
             # full acceleration accedes max acceleration:
-            if next_seg_sec.full_acceleration > max_linear_a:
+            if next_seg_sec.full_acceleration < max_linear_a:
                 max_seg_start_speed = get_max_seg_start_speed(next_seg_sec.speed_end, max_linear_a, next_seg_sec.distance)
                 next_seg_sec.speed_start = max_seg_start_speed
                 next_seg_sec.speed_middle = (next_seg_sec.speed_start + next_seg_sec.speed_end) * next_seg_sec.mid_fraction
@@ -183,15 +216,17 @@ def parse_path2(smooth_path):
             # append current circle and next segment sections at the beginning of the path:
             path_for_robot = [circle_sec, next_seg_sec] + path_for_robot
 
-        # first segment section:
-        first_seg_sec = PathSection(smooth_path[0])
-        first_seg_sec.is_first_movement = True
-        first_seg_sec.speed_start = 0
-        first_seg_sec.speed_end = next_circle_sec.speed_start
-        first_seg_sec.speed_middle = (first_seg_sec.speed_start + first_seg_sec.speed_end) * first_seg_sec.mid_fraction
+    # first segment section:
+    first_seg_sec = PathSection(smooth_path[0])
+    first_seg_sec.is_first_movement = True
+    first_seg_sec.speed_start = 0
+    first_seg_sec.speed_end = next_circle_sec.speed_start
+    first_seg_sec.speed_middle = (first_seg_sec.speed_start + first_seg_sec.speed_end) * first_seg_sec.mid_fraction
+    first_seg_sec.full_acceleration = get_linear_acceleration(first_seg_sec.speed_start, first_seg_sec.speed_end, first_seg_sec.distance)
+    path_for_robot = [first_seg_sec] + path_for_robot
 
-        first_seg_sec.full_acceleration = get_linear_acceleration(first_seg_sec.speed_start, first_seg_sec.speed_end, first_seg_sec.distance)
-
-        path_for_robot = [first_seg_sec] + path_for_robot
+    # todo del:
+    # print_smooth_path(smooth_path)
+    # print_robot_path(path_for_robot)
 
     return path_for_robot
