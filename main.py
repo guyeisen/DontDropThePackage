@@ -344,10 +344,10 @@ def robot_tests(control):
 # -------------------------------------------- main: -------------------------------------------------------
 def finished(path):
     print("IM BACK TO MAIN")
-    control: RobotControl = get_robot()
+    #control: RobotControl = get_robot()
     #robot_tests(control)
     path_for_robot = parse_path2(path)
-    control.run_path(path_for_robot)
+    #control.run_path(path_for_robot)
     #end_robot(control)
 
 if __name__ == '__main__':

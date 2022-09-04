@@ -31,7 +31,18 @@ def get_max_distance_and_index(points):
     print(f"max_distance: {max_distance}")
     return max_index, max_distance
 
-def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.6):
+def dive_deeper(points, max_index, collision_detector):
+    reduced_left = douglas_peuker(points[:max_index], collision_detector)
+    reduced_right = douglas_peuker(points[max_index:], collision_detector)
+    mid = douglas_peuker([reduced_left[-1], points[max_index], reduced_right[1]], collision_detector)
+    if len(mid) == 2:#means it got reduced
+        print(f"mid is len 2")
+        seg = get_segment(mid)
+        if collision_detector.is_edge_valid(seg):
+            return reduced_left[:-1] + reduced_right[1:]
+    return reduced_left + reduced_right
+
+def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.5):
     """
     returns optimaized list of PathPoint according to douglas poiker algorithm.
     considering collision detection
@@ -40,24 +51,27 @@ def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.6):
     print("I GOT HERE DOUGLAS")
     if len(points) < 3:
         return points
+    print(f"len(points) = {len(points)}")
 
     max_index, max_distance = get_max_distance_and_index(points)
 
     if max_distance >= epsilon and max_index > 0:
-        reduced_left = douglas_peuker(points[:max_index],collision_detector)
-        reduced_right = douglas_peuker(points[max_index:],collision_detector)
-        combined = reduced_left+reduced_right
-        return combined
+        if len(points) == 3:
+            return points
+        result = dive_deeper(points, max_index, collision_detector)
+        return result
+
     else:
         segment = get_segment(points)
         if collision_detector.is_edge_valid(segment):
             print(f"removed {len(points)-2} points")
-            return [points[0],points[len(points)-1]]
-
+            return [points[0],points[-1]]
         else:
-            print("wanted to remove but it was intersecting")
-            return points
-
+            if len(points)<=3:
+                return points
+            print("wanted to remove but it was intersecting, performing another recursion")
+            result = dive_deeper(points,max_index, collision_detector)
+            return result
 
 
 def parse_path(rays: List[Ker.Ray_2], last_point: Point_2):

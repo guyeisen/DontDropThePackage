@@ -474,8 +474,7 @@ class SolverViewerGUI(Ui_MainWindow):
         collision_detector: ObjectCollisionDetection = prm.collision_detection[robot]
 
         self.paths_optimized.paths[robot].points = douglas_peuker(self.paths_optimized.paths[robot].points ,collision_detector)
-        self.paths_optimized.paths[robot].points = douglas_peuker(self.paths_optimized.paths[robot].points,
-                                                                  collision_detector)
+
         self.smooth_path = get_smooth_path(self, use_cd=False)
         self.add_smooth_path_to_scene()
         self.toggle_paths(True)
