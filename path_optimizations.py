@@ -5,20 +5,22 @@ import numpy as np
 
 from discopygal.bindings import *
 from discopygal.solvers import PathPoint
-from numpy import argmax
-
-from rdp import rdp
 
 
 
-
-def get_segment(points):
+def get_segment(points:List[PathPoint]):
+    """
+    getting segments made by first and last point of points
+    """
     start = points[0].location
     end = points[-1].location
     segment = Segment_2(start, end)
     return segment
 
-def get_max_distance_and_index(points):
+def get_max_distance_and_index(points:List[PathPoint]):
+    """
+    getting tuple of (max index, max distance) of a point in points from the segment they create
+    """
     segment = get_segment(points)
     max_index = 0
     max_distance = 0
@@ -29,26 +31,46 @@ def get_max_distance_and_index(points):
             max_index = i
     max_distance = math.sqrt(max_distance)
     print(f"max_distance: {max_distance}")
+    print(f"segment length: {math.sqrt(segment.squared_length().to_double())}")
     return max_index, max_distance
 
-def dive_deeper(points, max_index, collision_detector):
+def validate_points(points:List[PathPoint],collision_detector):
+    """
+    returns true if segment created by points is valid
+    """
+    seg = get_segment(points)
+    return collision_detector.is_edge_valid(seg)
+
+def dive_deeper(points:List[PathPoint], max_index:int, collision_detector):
+    """
+    helper method for simplifying the douglas peuker algorithm
+    """
     reduced_left = douglas_peuker(points[:max_index], collision_detector)
+    if len(reduced_left) == 2:
+        reduced_left = reduced_left if validate_points(reduced_left, collision_detector) else points[:max_index]
+
     reduced_right = douglas_peuker(points[max_index:], collision_detector)
+    if len(reduced_right) == 2:
+        reduced_right = reduced_right if validate_points(reduced_right,collision_detector) else points[max_index:]
+
     mid = douglas_peuker([reduced_left[-1], points[max_index], reduced_right[1]], collision_detector)
     if len(mid) == 2:#means it got reduced
         print(f"mid is len 2")
-        seg = get_segment(mid)
-        if collision_detector.is_edge_valid(seg):
-            return reduced_left[:-1] + reduced_right[1:]
+        if validate_points(mid, collision_detector):
+            return reduced_left + reduced_right[1:]
     return reduced_left + reduced_right
 
-def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.5):
+
+
+def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.3):
     """
-    returns optimaized list of PathPoint according to douglas poiker algorithm.
+    returns optimaized list of PathPoint according to douglas peuker algorithm.
     considering collision detection
     recursive function
     """
-    print("I GOT HERE DOUGLAS")
+    from smooth_path import get_circle
+
+    print(f"I GOT HERE DOUGLAS ")
     if len(points) < 3:
         return points
     print(f"len(points) = {len(points)}")
@@ -67,7 +89,15 @@ def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.5):
             print(f"removed {len(points)-2} points")
             return [points[0],points[-1]]
         else:
-            if len(points)<=3:
+            if len(points)==3:
+                print(f"I GOT A THREE THAT I WANT BUT CANT SMOOTHEN!. problematic: {points[1].location}")
+                radius = math.sqrt(
+                get_circle(points[0].location, points[1].location, points[2].location).squared_radius().to_double())
+                get_max_distance_and_index(points)
+                print(f"RADIUS IS {radius}m")
+                # if radius > 9:
+                #     print(f"RADIUS IS {radius}m SMOOTHING WITH FORCE:")
+                #     return [points[0],points[-1]]
                 return points
             print("wanted to remove but it was intersecting, performing another recursion")
             result = dive_deeper(points,max_index, collision_detector)
@@ -76,6 +106,8 @@ def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.5):
 
 def parse_path(rays: List[Ker.Ray_2], last_point: Point_2):
     """
+    NOT IN USE: parsing path to poligonal movement
+
     returns list of tuples: (starting angle, distance)
                      (p2)
                     /    \
@@ -316,15 +348,17 @@ def parse_path2(smooth_path):
     first_seg_sec.speed_middle = (first_seg_sec.speed_start + first_seg_sec.speed_end) * first_seg_sec.mid_fraction
     first_seg_sec.full_acceleration = get_linear_acceleration(first_seg_sec.speed_start, first_seg_sec.speed_end, first_seg_sec.distance)
     path_for_robot = [first_seg_sec] + path_for_robot
+    first_seg_sec.angle_end = _calc_angle_rad(first_seg_sec.KerElement.source(), first_seg_sec.KerElement.target())
+
+    print(f"first segement angle: {math.degrees(first_seg_sec.angle_end)}")
 
     # todo del:
     # print_smooth_path(smooth_path)
     # print_robot_path(path_for_robot)
-    # first_seg_sec.angle_end = _calc_angle_rad(first_seg_sec.KerElement.source(),first_seg_sec.KerElement.target())
-    # print(f"first segement angle: {math.degrees(first_seg_sec.angle_end)}")
-    # for sec in path_for_robot:
-    #     print(f"start speed:{sec.speed_start} mid speed: {sec.speed_middle} end speed:{sec.speed_end}")
-    #     print(f"radius: {sec.radius}, angle: {sec.arc_angle}")
+
+    for sec in path_for_robot:
+        print(f"start speed:{sec.speed_start} mid speed: {sec.speed_middle} end speed:{sec.speed_end}")
+        print(f"radius: {sec.radius}, angle: {sec.arc_angle}")
 
 
     return path_for_robot

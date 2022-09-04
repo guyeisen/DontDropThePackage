@@ -253,8 +253,8 @@ class PRM(Solver):
                 print("HAVE NEGATIVE ANGLE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             factor = 1+angle
             func1 = (angle**2)/(2*math.pi) - angle + math.pi/2
-            func =  func1 if angle >2.5 else 5/(1+angle)
-            self.roadmap_optimized.add_edge(p1, p2,weight=func)
+            func = func1 if angle >2.5 else 5/(1+angle)
+            self.roadmap_optimized.add_edge(p1, p2,weight=func1)
         else:
             self.roadmap_optimized.add_edge(p1,p2,weight=0)
     def _print_angles(self,points:List[PathPoint]):
