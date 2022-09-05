@@ -48,11 +48,13 @@ class RobotControl:
         speed= 0.3
         for section in path:
             if section.speed_end > 1.5 or section.speed_start > 1.5:
-                print(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT")
+                print(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT. STOPPING")
                 self.stop()
+                return
             if section.isCircle and section.radius > 5:
-                print(f"radius seems weired: {section.radius} meters. STOPPING")
+                print(f"radius seems weired: {section.radius} meters. STOPPING. CHECK DOUGLAS!")
                 self.stop()
+                return
                 #raise Exception(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT")
             if section.is_first_movement:
                 self.rotate(math.degrees(section.angle_end))
@@ -125,6 +127,9 @@ class RobotControl:
             #print(S)
             speeds = [oposite_func(s) for s in S]
         #print(speeds)
+        # if end_speed == 0:
+        #     proportion = 1
+        proportion=1
         for i, s in enumerate(speeds):
             if s==0:
                 continue
@@ -134,9 +139,11 @@ class RobotControl:
             if i == len(speeds) - 1:
                 self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm,timeout=t,prevent_stop_factor=1 )
             else:
-                self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm,timeout=t)
-        t = distance*(1-proportion)/s
-        self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm, timeout=t, prevent_stop_factor=1)
+                self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm,timeout=t,prevent_stop_factor=1)
+        # if proportion!=1 and s!=0:#not sure about this
+        #     t = distance * (1 - proportion) / s
+        #     self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm, timeout=t, prevent_stop_factor=1)
+
 
 
     # def begin_slowly_to_speed(self,speed, intervals=20, in_time=5):
@@ -157,8 +164,9 @@ class RobotControl:
     #         #time.sleep(1)
 
     def rotate(self,theta):
-        print("IM ROTAING")
+
         t_theta_s100 = 2.375 * (theta / 360) * 3
+        print(f"IM ROTAING for {t_theta_s100}s")
         sign = 1 if theta >= 0 else -1
         self.ep_chassis.drive_wheels(w1=sign * 100/3, w2=sign * (-100)/3, w3=sign * (-100)/3, w4=sign * (100)/3,
                                      timeout=sign * t_theta_s100)  # 180 deg

@@ -29,7 +29,7 @@ from solver_viewer_gui import Ui_MainWindow, Ui_dialog, About_Dialog
 
 WINDOW_TITLE = "DiscoPygal Solver Viewer"
 DEFAULT_ZOOM = 30
-DEFAULT_SCENE ="corridor_scene.json"#"small_scene.json"# # "slalom_scene.json" # "simple_scene.json" # "obs_scene.json" #
+DEFAULT_SCENE ="corridor_scene.json"#"small_scene.json"##### # "slalom_scene.json" # "simple_scene.json" # "obs_scene.json" #
 DEFAULT_SOLVER = "prm.py"
 DEFAULT_DISC_SIZE = 0.01
 
@@ -460,6 +460,8 @@ class SolverViewerGUI(Ui_MainWindow):
                     self.add_segment(seg.source().x().to_double(), seg.source().y().to_double(),
                                         seg.target().x().to_double(), seg.target().y().to_double())
 
+
+
     def solver_done(self):
         """
         Enable icons on the toolbar after done running
@@ -473,9 +475,33 @@ class SolverViewerGUI(Ui_MainWindow):
         prm = self.solver
         collision_detector: ObjectCollisionDetection = prm.collision_detection[robot]
 
-        self.paths_optimized.paths[robot].points = douglas_peuker(self.paths_optimized.paths[robot].points ,collision_detector)
-        self.paths_optimized.paths[robot].points = douglas_peuker(self.paths_optimized.paths[robot].points,
-                                                                  collision_detector)
+        path_after_douglas = douglas_peuker(self.paths_optimized.paths[robot].points ,collision_detector)
+
+        self.paths_optimized.paths[robot].points = path_after_douglas
+
+        print([point.location for point in  self.paths_optimized.paths[robot].points ])
+
+        # skip_next = False
+        # stop = False
+        # stop_skipping = True
+        # for i in range(len(path_after_douglas)-3):
+        #     if stop_skipping:
+        #         if not skip_next:
+        #             seg = get_segment([path_after_douglas[i],path_after_douglas[i+2]])
+        #             seg1 = get_segment([path_after_douglas[i+1],path_after_douglas[i+2]])
+        #             if seg.has_on(seg1.source()):
+        #                 print(f"HAS ONNNNNNNNNNNNNNNNNNNNNNNNNNN {seg}")
+        #                 skip_next = True
+        #             else:
+        #                 skip_next = False
+        #                 stop_skipping = True
+        #         if skip_next:
+        #             stop_skipping = False
+        #     else:
+        #         stop_skipping = True
+
+
+
         self.smooth_path = get_smooth_path(self, use_cd=False)
         self.add_smooth_path_to_scene()
         self.toggle_paths(True)
@@ -594,7 +620,14 @@ class SolverViewerGUI(Ui_MainWindow):
         self.paths = None
         self.scenePathEdit.setText(self.scene_path)
 
-
+def get_segment(points: List[PathPoint]):
+    """
+    getting segments made by first and last point of points
+    """
+    start = points[0].location
+    end = points[-1].location
+    segment = Segment_2(start, end)
+    return segment
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     gui = SolverViewerGUI()

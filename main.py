@@ -344,23 +344,15 @@ def robot_tests(control):
 # -------------------------------------------- main: -------------------------------------------------------
 def finished(path):
     print("IM BACK TO MAIN")
-    control: RobotControl = get_robot()
+    #control: RobotControl = get_robot()
     #robot_tests(control)
     path_for_robot = parse_path2(path)
-    control.run_path(path_for_robot)
+    #control.run_path(path_for_robot)
     #end_robot(control)
 
 if __name__ == '__main__':
     try:
-        #control:RobotControl = get_robot()
-        #robot_tests(control)
-        #testings(control)
         env = EnviromentConfigurations()
-        print("FINISH")
-        draw_paths(env,optimize=True)
-
-        # path_for_robot = parse_path2(env.gui.smooth_path)
-        # control.run_path(path_for_robot)
 
         # replace_path_with_my_path(path) # todo temp delete
         # replace_path_for_simple_scene(env) # todo temp delete
@@ -371,7 +363,6 @@ if __name__ == '__main__':
 
         env.gui.mainWindow.show()
 
-        # end_robot(control)
     except Exception as e:
         print(repr(e))
         traceback.print_exc()
