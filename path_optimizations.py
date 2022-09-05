@@ -47,11 +47,11 @@ def dive_deeper(points:List[PathPoint], max_index:int, collision_detector):
     """
     reduced_left = douglas_peuker(points[:max_index], collision_detector)
     if len(reduced_left) == 2:
-        reduced_left = reduced_left if validate_points(reduced_left, collision_detector) else points[:max_index]
+        reduced_left = reduced_left if validate_points(reduced_left, collision_detector) else douglas_peuker(points[:max_index-1],collision_detector)+[points[max_index]]
 
     reduced_right = douglas_peuker(points[max_index:], collision_detector)
     if len(reduced_right) == 2:
-        reduced_right = reduced_right if validate_points(reduced_right,collision_detector) else points[max_index:]
+        reduced_right = reduced_right if validate_points(reduced_right,collision_detector) else [points[max_index]]+douglas_peuker(points[max_index+1:], collision_detector)
 
     mid = douglas_peuker([reduced_left[-1], points[max_index], reduced_right[1]], collision_detector)
     if len(mid) == 2:#means it got reduced
@@ -62,7 +62,7 @@ def dive_deeper(points:List[PathPoint], max_index:int, collision_detector):
 
 
 
-def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.3):
+def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.5):
     """
     returns optimaized list of PathPoint according to douglas peuker algorithm.
     considering collision detection
@@ -72,6 +72,7 @@ def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.3):
 
     # print(f"I GOT HERE DOUGLAS ")
     if len(points) < 3:
+        print([p.location for p in points])
         return points
     # print(f"len(points) = {len(points)}")
 
@@ -81,12 +82,14 @@ def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.3):
         if len(points) == 3:
             return points
         result = dive_deeper(points, max_index, collision_detector)
+        print([p.location for p in result])
         return result
 
     else:
         segment = get_segment(points)
         if collision_detector.is_edge_valid(segment):
             print(f"removed {len(points)-2} points")
+            print([points[0].location,points[-1].location])
             return [points[0],points[-1]]
         else:
             if len(points)==3:
@@ -98,10 +101,13 @@ def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.3):
                 # if radius > 9:
                 #     print(f"RADIUS IS {radius}m SMOOTHING WITH FORCE:")
                 #     return [points[0],points[-1]]
+                print([p.location for p in points])
                 return points
             print("wanted to remove but it was intersecting, performing another recursion")
             result = dive_deeper(points,max_index, collision_detector)
+            print([p.location for p in result])
             return result
+
 
 
 def parse_path(rays: List[Ker.Ray_2], last_point: Point_2):

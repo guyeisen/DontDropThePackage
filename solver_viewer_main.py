@@ -481,6 +481,19 @@ class SolverViewerGUI(Ui_MainWindow):
 
         print([point.location for point in  self.paths_optimized.paths[robot].points ])
 
+        # improeved_path = []
+        # for i in range(0, len(path_after_douglas)-2, 2):
+        #     p0 = path_after_douglas[i]
+        #     p1 = path_after_douglas[i+1]
+        #     p2 = path_after_douglas[i+2]
+        #     seg = get_segment([p0,p2])
+        #     if collision_detector.is_edge_valid(seg):
+        #         improeved_path+=[p0,p2]
+        #     else:
+        #         improeved_path+=[p0,p1,p2]
+        # print("improved:")
+        # print([point.location for point in improeved_path])
+
         # skip_next = False
         # stop = False
         # stop_skipping = True
