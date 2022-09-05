@@ -10,13 +10,12 @@ from numpy import argmax
 from rdp import rdp
 
 
-
-
 def get_segment(points):
     start = points[0].location
     end = points[-1].location
     segment = Segment_2(start, end)
     return segment
+
 
 def get_max_distance_and_index(points):
     segment = get_segment(points)
@@ -31,13 +30,14 @@ def get_max_distance_and_index(points):
     print(f"max_distance: {max_distance}")
     return max_index, max_distance
 
+
 def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.6):
     """
     returns optimaized list of PathPoint according to douglas poiker algorithm.
     considering collision detection
     recursive function
     """
-    print("I GOT HERE DOUGLAS")
+    # print("I GOT HERE DOUGLAS")
     if len(points) < 3:
         return points
 
@@ -166,11 +166,24 @@ class PathSection:
 def get_rad_from_direction(direction: Direction_2):
     return math.atan2(direction.dy().to_double(), direction.dx().to_double())
 
+
 def get_linear_acceleration(start_speed, end_speed, seg_len):
+    if seg_len == 0:
+        return 0
     return ((end_speed**2) - (start_speed**2)) / (2 * seg_len)
 
-def get_max_seg_start_speed(end_speed, max_linear_a, seg_len):
-    return math.sqrt((end_speed ** 2) - (2 * max_linear_a * seg_len))
+
+def update_linear_acceleration(seg_sec: PathSection):
+    seg_sec.full_acceleration = get_linear_acceleration(seg_sec.speed_start, seg_sec.speed_end, seg_sec.distance)
+
+
+def get_max_seg_start_speed(end_speed, min_linear_d, seg_len):
+    return math.sqrt((end_speed ** 2) - (2 * min_linear_d * seg_len))
+
+
+def get_max_seg_end_speed(start_speed, max_linear_a, seg_len):
+    return math.sqrt((start_speed ** 2) + (2 * max_linear_a * seg_len))
+
 
 # todo del:
 def print_smooth_path(smooth_path):
@@ -191,6 +204,7 @@ def print_smooth_path(smooth_path):
             seg = smooth_path[i]
             print(f"seg: {seg}")
 
+
 # todo del:
 def print_robot_path(robot_path):
     print("\nrobot path: ")
@@ -199,12 +213,14 @@ def print_robot_path(robot_path):
         if type(item.KerElement) is Ker.Circle_2:
             c = item.KerElement
             print(f"circle: ,        r: {round(item.radius, 2)}       v: {round(item.speed_start, 2)}")
+            if item.radius < 0.3:
+                print(f"max v suppose to be: {item.get_max_tangential_speed()}")
         else:
             seg = item.KerElement
-            print(f"seg: ,        len: {round(item.distance,2)}       v0: {round(item.speed_start,2)},   v_mid: {round(item.speed_middle,2)},     vf: {round(item.speed_end,2)}")
             part1_intervals = get_intervals_num(item.part1_dis, item.speed_start, item.speed_middle)
             part2_intervals = get_intervals_num(item.part2_dis, item.speed_middle, item.speed_end)
-            print(f"part1 intervals: {part1_intervals},           part2 intervals: {part2_intervals},")
+            print(f"        seg: ,        len: {round(item.distance,2)}       v0: {round(item.speed_start,2)},   v_mid: {round(item.speed_middle,2)},     vf: {round(item.speed_end,2)}     part1, part2 intervals: {part1_intervals}, {part2_intervals}")
+
 
 # todo del:
 def get_intervals_num(distance, start_speed, end_speed, max_speed_jump=0.01, max_interval_len=0.03):
@@ -237,80 +253,164 @@ def gen_robot_path_from_points(points):
     return parse_path(rays, points[len(points)-1].location)
 
 
+# ---------------- get_circles_sequence: --------------------------------
+def get_circles_sequence(start_i, smooth_path, last_seg_sec : PathSection):
+    ''' returns a list of PathSections of circles that have segments with no length in between, and ends with a normal segment.
+    Additionally it updates the previous segment section end speed and acceleration fields'''
+    from smooth_path import get_angle_of_point
+
+    i = start_i
+    cir_sec = PathSection(smooth_path[i])
+    prev_seg_sec = PathSection(smooth_path[i-1])
+    next_seg_sec = PathSection(smooth_path[i+1])
+
+    # add angles:
+    cir_sec.angle_start = get_angle_of_point(cir_sec.KerElement, prev_seg_sec.KerElement.target())
+    cir_sec.angle_end = get_angle_of_point(cir_sec.KerElement, next_seg_sec.KerElement.source())
+    cir_sec.arc_angle = cir_sec.angle_end - cir_sec.angle_start
+
+    cir_sec_seq = [cir_sec, next_seg_sec]
+    seq_speed = cir_sec.speed_start
+    # creating a circles sequence that ends with not zero segment
+    while next_seg_sec.distance == 0:
+        i+=2
+        cir_sec = PathSection(smooth_path[i])
+        prev_seg_sec = PathSection(smooth_path[i - 1])
+        next_seg_sec = PathSection(smooth_path[i + 1])
+
+        # add angles:
+        cir_sec.angle_start = get_angle_of_point(cir_sec.KerElement, prev_seg_sec.KerElement.target())
+        cir_sec.angle_end = get_angle_of_point(cir_sec.KerElement, next_seg_sec.KerElement.source())
+        cir_sec.arc_angle = cir_sec.angle_end - cir_sec.angle_start
+
+        # update seq_speed:
+        if cir_sec.speed_start < seq_speed:
+            seq_speed = cir_sec.speed_start
+        cir_sec_seq = cir_sec_seq + [cir_sec, next_seg_sec]
+
+    # adding the speeds to the sequence circles:
+    for sec in cir_sec_seq:
+        if type(sec.KerElement) is Circle_2:
+            sec.speed_start = seq_speed
+            sec.speed_end = seq_speed
+
+    # adding speeds to the previous seg_sec and the last "non-zero" segment section:
+    last_seg_sec.speed_end = seq_speed
+    cir_sec_seq[-1].speed_start = seq_speed
+    update_linear_acceleration(last_seg_sec)
+
+    return cir_sec_seq
+
+
+# ------------------------------------- fix_linear_accelerations -------------------------------------
+def fix_linear_accelerations(robot_path, max_linear_acceleration):
+    prev_seg_has_new_end_speed = False
+    for sec in robot_path:
+        if type(sec.KerElement) is Segment_2 and sec.distance != 0:
+            seg_sec = sec
+            if prev_seg_has_new_end_speed:
+                seg_sec.speed_start = new_speed
+                update_linear_acceleration(seg_sec)
+            if seg_sec.full_acceleration > max_linear_acceleration:
+                new_speed = seg_sec.speed_end = get_max_seg_end_speed(seg_sec.speed_start, max_linear_acceleration, seg_sec.distance)
+                prev_seg_has_new_end_speed = True
+            else:
+                prev_seg_has_new_end_speed = False
+        elif type(sec.KerElement) is Circle_2:
+            cir = sec
+            if prev_seg_has_new_end_speed:
+                cir.speed_start = cir.speed_end = new_speed
+
+
+# ----------------------------------------- fix_linear_decelerations: ------------------------------
+def fix_linear_decelerations(robot_path, min_linear_deceleration):
+    next_seg_has_new_end_speed = False
+    for sec in robot_path[::-1]:
+        if type(sec.KerElement) is Segment_2 and sec.distance != 0:
+            seg_sec = sec
+            if next_seg_has_new_end_speed:
+                seg_sec.speed_end = new_speed
+                update_linear_acceleration(seg_sec)
+            if seg_sec.full_acceleration < min_linear_deceleration:
+                new_speed = seg_sec.speed_start = get_max_seg_start_speed(seg_sec.speed_end, min_linear_deceleration, seg_sec.distance)
+                next_seg_has_new_end_speed = True
+            else:
+                next_seg_has_new_end_speed = False
+        elif type(sec.KerElement) is Circle_2:
+            cir = sec
+            if next_seg_has_new_end_speed:
+                cir.speed_start = cir.speed_end = new_speed
+
+
+# ------------------------------ add_optimal_middle_speeds: ---------------------------------------
+def add_optimal_middle_speeds(robot_path, max_linear_acceleration, min_linear_deceleration):
+    for sec in robot_path:
+        if type(sec.KerElement) is Segment_2 and sec.distance != 0:
+            seg_sec = sec
+            seg_sec.speed_middle = min(get_max_seg_end_speed(seg_sec.speed_start, max_linear_acceleration, seg_sec.part1_dis),
+                                       get_max_seg_start_speed(seg_sec.speed_end, min_linear_deceleration, seg_sec.part2_dis))
+
+
 # ------------------------------- parse_path2: -------------------------------------------
 def parse_path2(smooth_path):
     from smooth_path import get_angle_of_point
     """ assume path is list of segments and circles that connect each segment to the other
         speed/acceleration should be determined afterwards!
         """
-    # get empirical max linear acceleration:
+    # get empirical max linear deceleration and acceleration:
     empiric_start_speed = 0.9
     empiric_end_speed = 0.1
     empiric_seg_len = 0.2
-    max_linear_deceleration = get_linear_acceleration(empiric_start_speed, empiric_end_speed, empiric_seg_len)
+    min_linear_deceleration = get_linear_acceleration(empiric_start_speed, empiric_end_speed, empiric_seg_len)
 
-    path_for_robot = []
-    for i in range(len(smooth_path)-2, 0, -1):
+    max_linear_acceleration = (-1) * min_linear_deceleration
 
-        if type(smooth_path[i]) is Circle_2:
+    # print_smooth_path(smooth_path)  # todo del
 
-            # current circle:
-            curr_circle = smooth_path[i]
-            prev_seg = smooth_path[i - 1]
-            next_seg = smooth_path[i + 1]
-            circle_sec = PathSection(curr_circle)
-            circle_sec.angle_start = get_angle_of_point(curr_circle, prev_seg.target())
-            circle_sec.angle_end = get_angle_of_point(curr_circle, next_seg.source())
-            circle_sec.arc_angle = circle_sec.angle_end - circle_sec.angle_start
-
-            # next segment:
-            next_seg_sec = PathSection(smooth_path[i + 1])
-            if next_seg_sec.distance == 0:
-                # change the current circle speed to be equal to the next circle:
-                circle_sec.speed_start = circle_sec.speed_end = next_circle_sec.speed_start
-                next_circle_sec = circle_sec
-                path_for_robot = [circle_sec, next_seg_sec] + path_for_robot
-                continue
-            next_seg_sec.speed_start = circle_sec.speed_end
-            # last segment:
-            if i == len(smooth_path)-2:
-                next_seg_sec.is_last_movement = True
-            next_seg_sec.speed_end = 0 if next_seg_sec.is_last_movement else next_circle_sec.speed_start
-            next_seg_sec.full_acceleration = get_linear_acceleration(next_seg_sec.speed_start, next_seg_sec.speed_end, next_seg_sec.distance)
-
-            # full acceleration accedes max acceleration:
-            if next_seg_sec.full_acceleration < max_linear_deceleration:
-                max_seg_start_speed = get_max_seg_start_speed(next_seg_sec.speed_end, max_linear_deceleration, next_seg_sec.distance)
-                next_seg_sec.speed_start = max_seg_start_speed
-                next_seg_sec.speed_middle = (next_seg_sec.speed_start + next_seg_sec.speed_end) * next_seg_sec.mid_fraction
-                circle_sec.speed_start = circle_sec.speed_end = max_seg_start_speed
-            # set higher middle speed to segment:
-            else:
-                next_seg_sec.speed_middle = get_max_seg_start_speed(next_seg_sec.speed_end, max_linear_deceleration, next_seg_sec.part2_dis)
-
-            # saving pointer to the current circle section for next iteration:
-            next_circle_sec = circle_sec
-
-            # append current circle and next segment sections at the beginning of the path:
-            path_for_robot = [circle_sec, next_seg_sec] + path_for_robot
-
-    # first segment section:
+    # add first seg_sec:
     first_seg_sec = PathSection(smooth_path[0])
     first_seg_sec.is_first_movement = True
     first_seg_sec.speed_start = 0
-    first_seg_sec.speed_end = next_circle_sec.speed_start
-    first_seg_sec.speed_middle = (first_seg_sec.speed_start + first_seg_sec.speed_end) * first_seg_sec.mid_fraction
-    first_seg_sec.full_acceleration = get_linear_acceleration(first_seg_sec.speed_start, first_seg_sec.speed_end, first_seg_sec.distance)
-    path_for_robot = [first_seg_sec] + path_for_robot
+    robot_path = [first_seg_sec]
+
+    # loop1 -  adds the sections to robot_path, considering the circles sequences:
+    i = 1
+    prev_seg_sec = first_seg_sec
+    while i < len(smooth_path):
+        cir_seq = get_circles_sequence(i, smooth_path, prev_seg_sec)
+        print(f"cir_seq len: {len(cir_seq)}")
+        robot_path = robot_path + cir_seq
+        prev_seg_sec = cir_seq[-1]
+        i += len(cir_seq)
+    # last section:
+    last_seg_sec = prev_seg_sec
+    last_seg_sec.is_last_movement = True
+    last_seg_sec.speed_end = 0
+    update_linear_acceleration(last_seg_sec)
+
+    # print("\nafter loop1:") # todo del
+    # print_robot_path(robot_path) # todo del
+
+    # loop2 - fix linear accelerations:
+    fix_linear_accelerations(robot_path, max_linear_acceleration)
+
+    # print("\nafter loop2 - acceleration fix:") # todo del
+    # print_robot_path(robot_path) # todo del
+
+    # loop3 - fix linear decelerations:
+    fix_linear_decelerations(robot_path, min_linear_deceleration)
+
+    # print("\nafter loop3 - deceleration fix:") # todo del
+    # print_robot_path(robot_path) # todo del
+
+    # loop4 - add optimal middle speeds:
+    add_optimal_middle_speeds(robot_path, max_linear_acceleration, min_linear_deceleration)
+
+    # print("\nafter loop4 - adding mid speeds:") # todo del
+    # print_robot_path(robot_path) # todo del
 
     # todo del:
-    # print_smooth_path(smooth_path)
-    # print_robot_path(path_for_robot)
-    # first_seg_sec.angle_end = _calc_angle_rad(first_seg_sec.KerElement.source(),first_seg_sec.KerElement.target())
-    # print(f"first segement angle: {math.degrees(first_seg_sec.angle_end)}")
-    # for sec in path_for_robot:
-    #     print(f"start speed:{sec.speed_start} mid speed: {sec.speed_middle} end speed:{sec.speed_end}")
-    #     print(f"radius: {sec.radius}, angle: {sec.arc_angle}")
+    # print_smooth_path(smooth_path) # todo del
+    # print_robot_path(robot_path) # todo del
 
-
-    return path_for_robot
+    return robot_path

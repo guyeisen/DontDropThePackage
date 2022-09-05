@@ -357,11 +357,7 @@ if __name__ == '__main__':
         #testings(control)
         env = EnviromentConfigurations()
         print("FINISH")
-        #draw_paths(env,optimize=True)
-
-        # while env.gui.smooth_path is None:
-        #     print("Waiting for path creation...")
-        #     pass
+        draw_paths(env,optimize=True)
 
         # path_for_robot = parse_path2(env.gui.smooth_path)
         # control.run_path(path_for_robot)
