@@ -342,11 +342,29 @@ def robot_tests(control):
     # control.move_straight_exact(distance=0.6, speed=0.5)
     end_robot(control)
 # -------------------------------------------- main: -------------------------------------------------------
-def finished(path):
+def finished(smooth_path):
     print("IM BACK TO MAIN")
     #control: RobotControl = get_robot()
     #robot_tests(control)
-    path_for_robot = parse_path2(path)
+
+    # --- robots max accelerations from empiric calculations: -- todo del
+    # empiric_start_speed = 0.9
+    # empiric_end_speed = 0.1
+    # empiric_seg_len = 0.2
+    # min_linear_deceleration = ((empiric_end_speed**2) - (empiric_start_speed**2)) / (2 * empiric_seg_len)
+    # max_linear_acceleration = -min_linear_deceleration
+    #
+    # empiric_v = 0.5
+    # empiric_r = 0.6
+    # max_centripetal_acceleration = (empiric_v ** 2) / empiric_r
+
+    # --- robots max accelerations: --
+    min_linear_deceleration = -0.5
+    max_linear_acceleration = 0.5
+    max_centripetal_acceleration = 0.4
+
+    path_for_robot = parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration, max_centripetal_acceleration)
+
     #control.run_path(path_for_robot)
     #end_robot(control)
 

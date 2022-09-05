@@ -187,7 +187,6 @@ class PathSection:
         if type(ker_element) is Circle_2:
             self.isCircle = True
             self.radius = math.sqrt(ker_element.squared_radius().to_double())
-            self.speed_start = self.speed_end = self.get_max_tangential_speed()
 
         # --- segment: ---
         elif type(ker_element) is Segment_2:
@@ -199,18 +198,13 @@ class PathSection:
         else:
             raise Exception("ker element is neither Circle_2 not Segment_2")
 
-    def get_max_tangential_speed(self):
-        if not self.isCircle:
-            raise Exception("trying to calculate tangential speed of non circle section")
-        empiric_v = 0.5
-        empiric_r = 0.6
-        max_center_a = (empiric_v * empiric_v) / empiric_r
-        max_tangential_speed = math.sqrt(max_center_a * self.radius)
-        return max_tangential_speed
-
 
 def get_rad_from_direction(direction: Direction_2):
     return math.atan2(direction.dy().to_double(), direction.dx().to_double())
+
+
+def get_max_tangential_speed(max_center_a, r):
+    return math.sqrt(max_center_a * r)
 
 
 def get_linear_acceleration(start_speed, end_speed, seg_len):
@@ -249,6 +243,7 @@ def print_smooth_path(smooth_path):
         else:
             seg = smooth_path[i]
             print(f"seg: {seg}")
+
 
 # todo del:
 def print_robot_path(robot_path):
@@ -297,13 +292,14 @@ def gen_robot_path_from_points(points):
 
 
 # ---------------- get_circles_sequence: --------------------------------
-def get_circles_sequence(start_i, smooth_path, last_seg_sec : PathSection):
+def get_circles_sequence(start_i, smooth_path, last_seg_sec : PathSection, max_centripetal_acceleration):
     ''' returns a list of PathSections of circles that have segments with no length in between, and ends with a normal segment.
     Additionally it updates the previous segment section end speed and acceleration fields'''
     from smooth_path import get_angle_of_point
 
     i = start_i
     cir_sec = PathSection(smooth_path[i])
+    cir_sec.speed_start = cir_sec.speed_end = get_max_tangential_speed(max_centripetal_acceleration, cir_sec.radius)
     prev_seg_sec = PathSection(smooth_path[i-1])
     next_seg_sec = PathSection(smooth_path[i+1])
 
@@ -318,6 +314,7 @@ def get_circles_sequence(start_i, smooth_path, last_seg_sec : PathSection):
     while next_seg_sec.distance == 0:
         i+=2
         cir_sec = PathSection(smooth_path[i])
+        cir_sec.speed_start = cir_sec.speed_end = get_max_tangential_speed(max_centripetal_acceleration, cir_sec.radius)
         prev_seg_sec = PathSection(smooth_path[i - 1])
         next_seg_sec = PathSection(smooth_path[i + 1])
 
@@ -395,18 +392,11 @@ def add_optimal_middle_speeds(robot_path, max_linear_acceleration, min_linear_de
 
 
 # ------------------------------- parse_path2: -------------------------------------------
-def parse_path2(smooth_path):
+def parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration, max_centripetal_acceleration):
     from smooth_path import get_angle_of_point
     """ assume path is list of segments and circles that connect each segment to the other
         speed/acceleration should be determined afterwards!
         """
-    # get empirical max linear deceleration and acceleration:
-    empiric_start_speed = 0.9
-    empiric_end_speed = 0.1
-    empiric_seg_len = 0.2
-    min_linear_deceleration = get_linear_acceleration(empiric_start_speed, empiric_end_speed, empiric_seg_len)
-
-    max_linear_acceleration = (-1) * min_linear_deceleration
 
     # print_smooth_path(smooth_path)  # todo del
 
@@ -420,8 +410,7 @@ def parse_path2(smooth_path):
     i = 1
     prev_seg_sec = first_seg_sec
     while i < len(smooth_path):
-        cir_seq = get_circles_sequence(i, smooth_path, prev_seg_sec)
-        print(f"cir_seq len: {len(cir_seq)}")
+        cir_seq = get_circles_sequence(i, smooth_path, prev_seg_sec, max_centripetal_acceleration)
         robot_path = robot_path + cir_seq
         prev_seg_sec = cir_seq[-1]
         i += len(cir_seq)
@@ -454,6 +443,6 @@ def parse_path2(smooth_path):
 
     # todo del:
     # print_smooth_path(smooth_path) # todo del
-    # print_robot_path(robot_path) # todo del
+    print_robot_path(robot_path) # todo del
 
     return robot_path
