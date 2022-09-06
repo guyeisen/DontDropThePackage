@@ -57,7 +57,7 @@ class RobotControl:
                 return
                 #raise Exception(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT")
             if section.is_first_movement:
-                self.rotate(math.degrees(section.angle_end))
+                self.rotate(section.angle_end)
             if section.isCircle:
 
                 self.move_circle_Husband(speed=section.speed_end,

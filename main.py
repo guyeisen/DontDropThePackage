@@ -327,14 +327,14 @@ def print_smooth_path(smooth_path):
             print(f"seg_{i} -- {seg}\n")
 
 def robot_tests(control):
-    speed = 0.9
+    speed = 0.3
     end_speed = 0.0
-    R = 2
+    R = 0.3
     theta = 90
     #control.rotate(theta)
-    control.glide_smoothly(start_speed=0.0, end_speed=0.5, distance=2, func=lambda x: x, oposite_func=lambda x: x)
+    # control.glide_smoothly(start_speed=0.0, end_speed=0.5, distance=2, func=lambda x: x, oposite_func=lambda x: x)
     # control.glide_smoothly(start_speed=0.0, end_speed=1.5, distance=5, func=math.exp, oposite_func=math.log)
-    # control.move_circle_Husband(speed=speed, R=R, theta=math.pi,circle_orient=Ker.CLOCKWISE,should_stop=False)
+    control.move_circle_Husband(speed=speed, R=R, theta=0.5* math.pi, circle_orient=Ker.CLOCKWISE,should_stop=True)
     # control.glide_smoothly(start_speed=speed, end_speed=end_speed, distance=0.2, func=lambda x: x, oposite_func=lambda x: x,intervals=7)
     #control.move_straight_exact(distance=1, speed=end_speed)
     # control.move_straight_exact(distance=2, speed=0.6)
@@ -344,8 +344,8 @@ def robot_tests(control):
 # -------------------------------------------- main: -------------------------------------------------------
 def finished(smooth_path):
     print("IM BACK TO MAIN")
-    #control: RobotControl = get_robot()
-    #robot_tests(control)
+    control: RobotControl = get_robot()
+    # robot_tests(control)
 
     # --- robots max accelerations from empiric calculations: -- todo del
     # empiric_start_speed = 0.9
@@ -365,8 +365,8 @@ def finished(smooth_path):
 
     path_for_robot = parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration, max_centripetal_acceleration)
 
-    #control.run_path(path_for_robot)
-    #end_robot(control)
+    control.run_path(path_for_robot)
+    end_robot(control)
 
 if __name__ == '__main__':
     try:
