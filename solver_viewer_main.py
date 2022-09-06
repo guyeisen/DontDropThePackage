@@ -515,7 +515,7 @@ class SolverViewerGUI(Ui_MainWindow):
 
 
 
-        self.smooth_path = get_smooth_path(self, use_cd=False)
+        self.smooth_path = get_smooth_path(self, use_cd=True)
         self.add_smooth_path_to_scene()
         self.toggle_paths(True)
         self.paths_created = True
