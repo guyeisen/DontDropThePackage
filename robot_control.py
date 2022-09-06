@@ -47,14 +47,14 @@ class RobotControl:
         """runs the given path"""
         speed= 0.3
         for section in path:
-            if section.speed_end > 1.5 or section.speed_start > 1.5:
-                print(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT. STOPPING")
-                self.stop()
-                return
-            if section.isCircle and section.radius > 5:
-                print(f"radius seems weired: {section.radius} meters. STOPPING. CHECK DOUGLAS!")
-                self.stop()
-                return
+            # if section.speed_end > 5 or section.speed_start > 5:
+            #     print(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT. STOPPING")
+            #     self.stop()
+            #     return
+            # if section.isCircle and section.radius > 5:
+            #     print(f"radius seems weired: {section.radius} meters. STOPPING. CHECK DOUGLAS!")
+            #     self.stop()
+            #     return
                 #raise Exception(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT")
             if section.is_first_movement:
                 self.rotate(section.angle_end)
@@ -79,6 +79,7 @@ class RobotControl:
                                         should_stop=section.should_stop)
                 else:
                     self.move_straight_exact(distance=section.distance,speed=section.speed_end)
+        self.stop()
 
 
     def drive_rpm(self, w1, w2, w3, w4, timeout, should_stop=True,prevent_stop_factor=0.9):
@@ -236,9 +237,9 @@ class RobotControl:
         # print(f"rpm_out: {rpm_out}, rpm_in: {rpm_in}")
         # print(f"Calculated radius should be: {((rpm_out + rpm_in) / (rpm_out - rpm_in))*CONST}")
         if circle_orient == Ker.CLOCKWISE:
-            self.drive_rpm(w1=rpm_in, w2=rpm_out, w3=rpm_out, w4=rpm_in, timeout=time_for_theta*0.95)
+            self.drive_rpm(w1=rpm_in, w2=rpm_out, w3=rpm_out, w4=rpm_in, timeout=time_for_theta)
         elif circle_orient == Ker.COUNTERCLOCKWISE:
-            self.drive_rpm(w1=rpm_out, w2=rpm_in, w3=rpm_in, w4=rpm_out, timeout=time_for_theta * 0.95)
+            self.drive_rpm(w1=rpm_out, w2=rpm_in, w3=rpm_in, w4=rpm_out, timeout=time_for_theta)
         if should_stop:
             self.stop()
 

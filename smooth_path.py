@@ -177,7 +177,7 @@ def get_smooth_path(gui, use_cd=True):
     ''' returns a list of segments and circles alternately.
     the circles forms circular arcs that starts/ends at the midpoint of the original segments at most '''
 
-    robot_radius = 0.5 * (math.sqrt(ROBOT_WIDTH*ROBOT_WIDTH + ROBOT_LENGTH*ROBOT_LENGTH))
+    robot_radius = 0.25
 
     # -- get the collision_detector object: --
     robot = gui.discopygal_scene.robots[0]

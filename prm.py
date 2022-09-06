@@ -24,7 +24,7 @@ from error_handling import PathNotFoundException
 from smooth_path import get_circle, get_angle
 
 lock = threading.Lock()
-NUM_OF_LANDMARKS = 100
+NUM_OF_LANDMARKS = 200
 NEAEREST_NEIGHBOUR = 15
 
 class PointForOptimization:

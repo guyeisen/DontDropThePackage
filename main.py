@@ -332,9 +332,10 @@ def robot_tests(control):
     R = 0.3
     theta = 90
     #control.rotate(theta)
-    # control.glide_smoothly(start_speed=0.0, end_speed=0.5, distance=2, func=lambda x: x, oposite_func=lambda x: x)
+    control.glide_smoothly(start_speed=0.0, end_speed=0.5, distance=3.6, func=lambda x: x, oposite_func=lambda x: x)
+    control.stop()
     # control.glide_smoothly(start_speed=0.0, end_speed=1.5, distance=5, func=math.exp, oposite_func=math.log)
-    control.move_circle_Husband(speed=speed, R=R, theta=0.5* math.pi, circle_orient=Ker.CLOCKWISE,should_stop=True)
+    # control.move_circle_Husband(speed=speed, R=R, theta=0.5* math.pi, circle_orient=Ker.CLOCKWISE,should_stop=True)
     # control.glide_smoothly(start_speed=speed, end_speed=end_speed, distance=0.2, func=lambda x: x, oposite_func=lambda x: x,intervals=7)
     #control.move_straight_exact(distance=1, speed=end_speed)
     # control.move_straight_exact(distance=2, speed=0.6)
@@ -361,7 +362,7 @@ def finished(smooth_path):
     # --- robots max accelerations: --
     min_linear_deceleration = -0.5
     max_linear_acceleration = 0.5
-    max_centripetal_acceleration = 0.4
+    max_centripetal_acceleration = 0.2
 
     path_for_robot = parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration, max_centripetal_acceleration)
 
@@ -374,8 +375,6 @@ if __name__ == '__main__':
 
         # replace_path_with_my_path(path) # todo temp delete
         # replace_path_for_simple_scene(env) # todo temp delete
-
-
 
         # print_smooth_path() # todo temp delete
 

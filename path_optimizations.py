@@ -62,7 +62,7 @@ def dive_deeper(points:List[PathPoint], max_index:int, collision_detector):
 
 
 
-def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.5):
+def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.7):
     """
     returns optimaized list of PathPoint according to douglas peuker algorithm.
     considering collision detection
