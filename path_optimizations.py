@@ -258,7 +258,7 @@ def print_robot_path(robot_path):
         item = robot_path[i]
         if type(item.KerElement) is Ker.Circle_2:
             c = item.KerElement
-            print(f"circle: ,        r: {round(item.radius, 2)}       v: {round(item.speed_start, 2)}")
+            print(f"circle: ,        r: {round(item.radius, 2)}       v: {round(item.speed_start, 2)}, angle: {item.arc_angle}")
         else:
             seg = item.KerElement
             part1_intervals = get_intervals_num(item.part1_dis, item.speed_start, item.speed_middle)
@@ -276,22 +276,18 @@ def get_intervals_num(distance, start_speed, end_speed, max_speed_jump=0.01, max
     return intervals_num
 
 
-def _calc_angle_rad(p1: Point_2, p2: Point_2):
+def _calc_angle_rad(p1: Point_2, p2: Point_2): #TODO DELETE
     dx = p2.x().to_double() - p1.x().to_double()
     dy = p2.y().to_double() - p1.y().to_double()
     return math.atan2(dy, dx)
 
-def _get_Direction_2(p1: Point_2, p2: Point_2):
+def _get_Direction_2(p1: Point_2, p2: Point_2): #TODO DELETE
     dx = p2.x() - p1.x()
     dy = p2.y() - p1.y()
     return Direction_2(dx, dy)
 
 
-def gen_robot_path_from_points(points):
-    #robot_path = optimize_path(points) #CHECK WITH AVIGAIL WHAT IM GETTING BACK. ASSUMING list of points, each telling me what they represent (start/end of segment or arc)
-    #robot_path = self.points
-    #self.points[0].location.x().to_double()
-    #Ray_2(self.points[0].location, Direction_2(self.points[0].location.x(),self.points[0].location.y()))
+def gen_robot_path_from_points(points): #TODO DELETE
     print(f"Calculated {len(points)} points")
     rays = [Ker.Ray_2(points[i].location, _get_Direction_2(points[i].location, points[i + 1].location)) for i in range(len(points) - 1)]
     return parse_path(rays, points[len(points)-1].location)
@@ -449,6 +445,6 @@ def parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration, m
 
     # todo del:
     # print_smooth_path(smooth_path) # todo del
-    print_robot_path(robot_path) # todo del
+    #print_robot_path(robot_path) # todo del
 
     return robot_path

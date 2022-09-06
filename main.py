@@ -31,33 +31,6 @@ class EnviromentConfigurations:
         self.app = QtWidgets.QApplication(sys.argv)
         self.gui = SolverViewerGUI()
         self.gui.solve()
-        # self.gui.toggle_paths()
-
-        #self.mygui = SolverViewerGUI()
-        # self.path_edges = []
-        # self.path_vertices = []
-        # self.writer = None
-        # self.discopygal_scene = Scene()
-        # self.scene_path = ""
-
-        # self.paths = None
-        # # Setup solver
-        # self.solver_class = None
-        # #self.load_solver()
-        # self.solver_graph = None
-        # self.solver_arrangement = None
-        # self.solver_graph_vertices = [] # gui
-        # self.solver_graph_edges = [] # gui
-        #self.execute_defaults()
-
-
-
-    def execute_defaults(self):
-        self.gui.mainWindow.show()
-        self.load_scene()
-        self.solver_from_file()
-        self.gui.solve()#############was without gui,
-        self.gui.toggle_paths()
 
 
     def load_scene(self):
@@ -327,23 +300,11 @@ def print_smooth_path(smooth_path):
             print(f"seg_{i} -- {seg}\n")
 
 def robot_tests(control):
-    speed = 0.9
-    end_speed = 0.0
-    R = 2
-    theta = 90
-    #control.rotate(theta)
-    control.glide_smoothly(start_speed=0.0, end_speed=0.5, distance=2, func=lambda x: x, oposite_func=lambda x: x)
-    # control.glide_smoothly(start_speed=0.0, end_speed=1.5, distance=5, func=math.exp, oposite_func=math.log)
-    # control.move_circle_Husband(speed=speed, R=R, theta=math.pi,circle_orient=Ker.CLOCKWISE,should_stop=False)
-    # control.glide_smoothly(start_speed=speed, end_speed=end_speed, distance=0.2, func=lambda x: x, oposite_func=lambda x: x,intervals=7)
-    #control.move_straight_exact(distance=1, speed=end_speed)
-    # control.move_straight_exact(distance=2, speed=0.6)
-    # control.begin_slowly_to_speed(speed=0.6)
-    # control.move_straight_exact(distance=0.6, speed=0.5)
+    control.move_circle_Husband(speed=0.83,R=92.29)
     end_robot(control)
 # -------------------------------------------- main: -------------------------------------------------------
 def finished(smooth_path):
-    print("IM BACK TO MAIN")
+
     #control: RobotControl = get_robot()
     #robot_tests(control)
 
@@ -359,14 +320,14 @@ def finished(smooth_path):
     # max_centripetal_acceleration = (empiric_v ** 2) / empiric_r
 
     # --- robots max accelerations: --
-    min_linear_deceleration = -0.5
-    max_linear_acceleration = 0.5
+    min_linear_deceleration = -0.4
+    max_linear_acceleration = 2.5
     max_centripetal_acceleration = 0.4
 
     path_for_robot = parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration, max_centripetal_acceleration)
-
-    #control.run_path(path_for_robot)
-    #end_robot(control)
+    #time.sleep(10)
+    # control.run_path(path_for_robot)
+    # end_robot(control)
 
 if __name__ == '__main__':
     try:

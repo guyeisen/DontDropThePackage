@@ -47,17 +47,17 @@ class RobotControl:
         """runs the given path"""
         speed= 0.3
         for section in path:
-            if section.speed_end > 1.5 or section.speed_start > 1.5:
+            if section.speed_end > 5 or section.speed_start > 5:
                 print(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT. STOPPING")
                 self.stop()
                 return
-            if section.isCircle and section.radius > 5:
-                print(f"radius seems weired: {section.radius} meters. STOPPING. CHECK DOUGLAS!")
-                self.stop()
-                return
+            # if section.isCircle and section.radius > 100:
+            #     print(f"radius seems weired: {section.radius} meters. STOPPING. CHECK DOUGLAS!")
+            #     self.stop()
+            #     return
                 #raise Exception(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT")
             if section.is_first_movement:
-                self.rotate(math.degrees(section.angle_end))
+                self.rotate(section.angle_end)
             if section.isCircle:
 
                 self.move_circle_Husband(speed=section.speed_end,
@@ -233,8 +233,9 @@ class RobotControl:
         time_for_theta = math.fabs(theta/ (wanted_omega))
 
         # print(f"time for theta {math.degrees(theta)}: {time_for_theta}s RUNNING 95% - {time_for_theta*0.95}")
-        # print(f"rpm_out: {rpm_out}, rpm_in: {rpm_in}")
+        print(f"rpm_out: {rpm_out}, rpm_in: {rpm_in}")
         # print(f"Calculated radius should be: {((rpm_out + rpm_in) / (rpm_out - rpm_in))*CONST}")
+
         if circle_orient == Ker.CLOCKWISE:
             self.drive_rpm(w1=rpm_in, w2=rpm_out, w3=rpm_out, w4=rpm_in, timeout=time_for_theta*0.95)
         elif circle_orient == Ker.COUNTERCLOCKWISE:
