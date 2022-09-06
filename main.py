@@ -344,6 +344,7 @@ def robot_tests(control):
     end_robot(control)
 # -------------------------------------------- main: -------------------------------------------------------
 def finished(smooth_path):
+
     print("IM BACK TO MAIN")
     control: RobotControl = get_robot()
     # robot_tests(control)
@@ -365,9 +366,9 @@ def finished(smooth_path):
     max_centripetal_acceleration = 0.2
 
     path_for_robot = parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration, max_centripetal_acceleration)
-
-    control.run_path(path_for_robot)
-    end_robot(control)
+    #time.sleep(10)
+    # control.run_path(path_for_robot)
+    # end_robot(control)
 
 if __name__ == '__main__':
     try:

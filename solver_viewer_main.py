@@ -389,7 +389,6 @@ class SolverViewerGUI(Ui_MainWindow):
         self.path_vetices_optimized.clear()
         self.path_edges.clear()
         self.path_edges_optimized.clear()
-        print("CLEAR?! WHO DID THAT")
 
     def get_solver_args(self):
         """
@@ -412,13 +411,9 @@ class SolverViewerGUI(Ui_MainWindow):
         solver = self.solver_class.from_arguments(args)
         solver.set_verbose(self.writer)
         solver.load_scene(self.discopygal_scene)
-        #self.paths = solver.solve()
-        print("ABOUT TO CALL SOLVE.SOLVE()")
         self.paths, self.paths_optimized = solver.solve()
-        print("HERE")
         self.solver_graph = solver.get_graph()
         self.solver_arrangement = solver.get_arrangement()
-
         self.solver = solver
 
     def solve(self):
@@ -474,47 +469,9 @@ class SolverViewerGUI(Ui_MainWindow):
         robot = self.discopygal_scene.robots[0]
         prm = self.solver
         collision_detector: ObjectCollisionDetection = prm.collision_detection[robot]
-
-        path_after_douglas = douglas_peuker(self.paths_optimized.paths[robot].points ,collision_detector)
-
+        path_after_douglas = douglas_peuker(self.paths_optimized.paths[robot].points, collision_detector)
         self.paths_optimized.paths[robot].points = path_after_douglas
-
-        print([point.location for point in  self.paths_optimized.paths[robot].points ])
-
-        # improeved_path = []
-        # for i in range(0, len(path_after_douglas)-2, 2):
-        #     p0 = path_after_douglas[i]
-        #     p1 = path_after_douglas[i+1]
-        #     p2 = path_after_douglas[i+2]
-        #     seg = get_segment([p0,p2])
-        #     if collision_detector.is_edge_valid(seg):
-        #         improeved_path+=[p0,p2]
-        #     else:
-        #         improeved_path+=[p0,p1,p2]
-        # print("improved:")
-        # print([point.location for point in improeved_path])
-
-        # skip_next = False
-        # stop = False
-        # stop_skipping = True
-        # for i in range(len(path_after_douglas)-3):
-        #     if stop_skipping:
-        #         if not skip_next:
-        #             seg = get_segment([path_after_douglas[i],path_after_douglas[i+2]])
-        #             seg1 = get_segment([path_after_douglas[i+1],path_after_douglas[i+2]])
-        #             if seg.has_on(seg1.source()):
-        #                 print(f"HAS ONNNNNNNNNNNNNNNNNNNNNNNNNNN {seg}")
-        #                 skip_next = True
-        #             else:
-        #                 skip_next = False
-        #                 stop_skipping = True
-        #         if skip_next:
-        #             stop_skipping = False
-        #     else:
-        #         stop_skipping = True
-
-
-
+        print([point.location for point in  self.paths_optimized.paths[robot].points])
         self.smooth_path = get_smooth_path(self, use_cd=True)
         self.add_smooth_path_to_scene()
         self.toggle_paths(True)
@@ -524,7 +481,7 @@ class SolverViewerGUI(Ui_MainWindow):
 
 
 
-    def select_solver(self, solver_name, default=False):
+    def select_solver(self, solver_name):
         """
         Set the selected solver.
         Also generate dynamically the GUI elements corresponding to the solver's arguments.
@@ -630,6 +587,7 @@ class SolverViewerGUI(Ui_MainWindow):
         self.clear_paths()
         if self.paths is not None:
             self.paths.paths.clear()
+            self.paths_optimized.clear()
         self.paths = None
         self.scenePathEdit.setText(self.scene_path)
 
