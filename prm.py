@@ -171,7 +171,9 @@ class PRM(Solver):
         """
         super().load_scene(scene)
         self.sampler.set_scene(scene)
-
+        if self.num_landmarks < self.k:
+            print("Illegal numbers. Number of landmarks must be greater than k", file=self.writer)
+            return False
         # Build collision detection for each robot
         for robot in scene.robots:
             self.collision_detection[robot] = collision_detection.ObjectCollisionDetection(scene.obstacles, robot)
@@ -235,7 +237,7 @@ class PRM(Solver):
                     self.roadmap_optimized.add_edge(opt_point, neigh, weight=self.metric.dist(opt_point.point, neigh.point).to_double())
                     dic_optPoint_to_optPoint_of_neighbor.pop(opt_point, False)
                     dic_optPoint_to_optPoint_of_neighbor.pop(neigh, False)
-        print("HEY!")
+        return True
 
 
     def add_optimizing_edge(self, p1:PointForOptimization, p2:PointForOptimization):

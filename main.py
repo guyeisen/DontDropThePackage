@@ -281,6 +281,10 @@ def end_robot(control):
     # ----------- set led to grey: ----------#
     control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=10, b=10, effect=led.EFFECT_ON)
     control.ep_robot.close()
+def robot_path_not_found(control):
+    # ----------- set led to grey: ----------#
+    control.ep_led.set_led(comp=led.COMP_ALL, r=10, g=0, b=0, effect=led.EFFECT_ON)
+    control.ep_robot.close()
 
 def replace_path_with_my_path(path): # todo temp delete
     p0 = Point_2(-1, 2)
@@ -342,11 +346,21 @@ def robot_tests(control):
     # control.begin_slowly_to_speed(speed=0.6)
     # control.move_straight_exact(distance=0.6, speed=0.5)
     end_robot(control)
-# -------------------------------------------- main: -------------------------------------------------------
-def finished(smooth_path):
 
-    print("IM BACK TO MAIN")
-    control: RobotControl = get_robot()
+def path_found(control):
+    control.ep_led.set_led(comp=led.COMP_ALL, r=60, g=0, b=60, effect=led.EFFECT_ON)
+# -------------------------------------------- main: -------------------------------------------------------
+def finished_solving(path_created=True, writer=None):
+    if writer is not None:
+        print("Hurray I'm ready to run! Click Play!",file=writer)
+    # control: RobotControl = get_robot()
+    # if not path_created:
+    #     robot_path_not_found(control)
+    #     return
+    # else:
+    #     path_found(control)
+    #     return
+
     # robot_tests(control)
 
     # --- robots max accelerations from empiric calculations: -- todo del
@@ -361,14 +375,19 @@ def finished(smooth_path):
     # max_centripetal_acceleration = (empiric_v ** 2) / empiric_r
 
     # --- robots max accelerations: --
+
+def parse_and_run(smooth_path):
+    control: RobotControl = get_robot()
     min_linear_deceleration = -0.5
     max_linear_acceleration = 0.5
     max_centripetal_acceleration = 0.2
 
-    path_for_robot = parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration, max_centripetal_acceleration)
-    #time.sleep(10)
-    # control.run_path(path_for_robot)
-    # end_robot(control)
+    path_for_robot = parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration,
+                                 max_centripetal_acceleration)
+    time.sleep(10)
+    control.run_path(path_for_robot)
+    end_robot(control)
+
 
 if __name__ == '__main__':
     try:

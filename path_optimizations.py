@@ -62,7 +62,7 @@ def dive_deeper(points:List[PathPoint], max_index:int, collision_detector):
 
 
 
-def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.7):
+def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.3):
     """
     returns optimaized list of PathPoint according to douglas peuker algorithm.
     considering collision detection
@@ -444,7 +444,7 @@ def parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration, m
     # print_robot_path(robot_path) # todo del
 
     # todo del:
-    # print_smooth_path(smooth_path) # todo del
-    #print_robot_path(robot_path) # todo del
+    print_smooth_path(smooth_path) # todo del
+    print_robot_path(robot_path) # todo del
 
     return robot_path
