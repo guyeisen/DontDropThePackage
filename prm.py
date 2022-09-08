@@ -1,3 +1,6 @@
+"""THIS IS MOSTLY prm.py FROM discopygal/solvers repository.
+    WE EDITED AND CHANGED IT A BIT TO GET OUR NEEDS"""
+
 import itertools
 import math
 import threading

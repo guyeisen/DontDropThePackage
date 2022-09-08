@@ -1,3 +1,7 @@
+"""THIS IS solver_viewer_gui originally taken as is from discopygal/tools
+    WE DID NOT TOUCH ANYTHING HERE AND THIS IS NOT OUR CODE
+    FULL CREDIT FOR THE DISCOPYGAL DEVELOPERS"""
+
 # -*- coding: utf-8 -*-
 
 # Form implementation generated from reading ui file 'ui.ui'
