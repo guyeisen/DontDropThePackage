@@ -1,3 +1,6 @@
+"""THIS IS collision_detection originally taken as is from discopygal.
+    WE DID NOT TOUCH ANYTHING HERE EXCEPT FOR ONE FUNCTION: is_arc_valid_approximated THAT WE ADDED
+    FULL CREDIT FOR THE DISCOPYGAL DEVELOPERS"""
 import math
 
 from discopygal.bindings import TPoint, Face, Aos2, X_monotone_curve_2, Arrangement_2, Arr_trapezoid_ric_point_location
