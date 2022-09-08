@@ -116,23 +116,6 @@ class ObjectCollisionDetection(object):
         return True
 
 
-    def is_arc_valid(self, circle, source, target):
-
-        # obstacles = self.obstacles
-        # for obs in obstacles:
-        #     poly = obs.poly
-
-        res = []
-        x_monotone_curve = X_monotone_curve_2(circle, TPoint(source.x(), source.y()), TPoint(target.x(), target.y()), circle.orientation())
-        Aos2.zone(self.cspace, x_monotone_curve, res, self.point_location)
-
-        for obj in res:
-            if type(obj) == Face:
-                if obj.data() > 0:
-                    return False
-        return True
-
-
     def build_cspace(self):
         """
         Build the Cspace arrangement
