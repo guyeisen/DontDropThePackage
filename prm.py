@@ -19,7 +19,6 @@ from discopygal.solvers.samplers import Sampler, Sampler_Uniform
 from discopygal.geometry_utils import conversions
 import collision_detection
 
-#from smooth_path import get_circle
 from error_handling import PathNotFoundException
 from smooth_path import get_circle, get_angle
 
@@ -34,7 +33,7 @@ class PointForOptimization:
         self.connected_to = connected_to
 
     def __str__(self):
-        return f"main:({self.point})--->({self.connected_to})"
+        return f"({self.point})--->({self.connected_to})"
     def __eq__(self, other):
         return self.point==other.point and self.connected_to==other.connected_to
     def __hash__(self):
@@ -46,8 +45,6 @@ class OptimizedGraph(nx.Graph):
     def add_edge(self, u_of_edge:PointForOptimization ,v_of_edge:PointForOptimization, **attr):
         """Overriden method for adding edge. keeping that a new edge won't insert already exists nodes."""
         u, v = u_of_edge, v_of_edge
-        # if u.point == v.point and u.connected_to == v.connected_to :
-        #     return #means this is not an edge, this is a point in graph - nothing to do
         super().add_edge(u, v, **attr)
 
 class PRM(Solver):
@@ -247,18 +244,13 @@ class PRM(Solver):
         v1 = Point_2(p1.point[2 * 0], p1.point[2 * 0 + 1])
         v2 = Point_2(p2.connected_to[2 * 0], p2.connected_to[2 * 0 + 1])
         if v0 != v1 and v1 != v2:
-            c = get_circle(v0, v1, v2)
-            r_squre= c.squared_radius().to_double()
-            r_squre = math.sqrt(r_squre)
             angle = get_angle(v0,v1,v2)
-            if angle < 0:
-                print("HAVE NEGATIVE ANGLE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            factor = 1+angle
             func1 = (angle**2)/(2*math.pi) - angle + math.pi/2
-            func = func1 if angle >2.5 else 5/(1+angle)
             self.roadmap_optimized.add_edge(p1, p2,weight=func1)
         else:
             self.roadmap_optimized.add_edge(p1,p2,weight=0)
+
+
     def _print_angles(self,points:List[PathPoint]):
         angles = []
         for i in range(len(points)-2):
@@ -279,10 +271,8 @@ class PRM(Solver):
                 print('No path found...', file=self.writer)
             return PathCollection(), PathCollection()
         if not nx.algorithms.has_path(self.roadmap_optimized, self.start_opt, self.end_opt):
-            print("MY BUG")
-            print('No path found...', file=self.writer)
+            print('Optimized path not found...', file=self.writer)
             return PathCollection(), PathCollection()
-        print("1")
         # Convert from a sequence of Point_d points to PathCollection
         try:
             tensor_path = nx.algorithms.shortest_path(self.roadmap, self.start, self.end, weight='weight')
@@ -297,19 +287,16 @@ class PRM(Solver):
         for i, robot in enumerate(self.scene.robots):
             points = []
             points_optimized = []
-            k = 0
             for point in tensor_path:
                 points.append(PathPoint(Point_2(point[2 * i], point[2 * i + 1])))
-            print("SHORTEST:")
-            self._print_angles(points)
             path = Path(points)
             in_path_dic={}
+
             for opt_point in tensor_path_optimized:
                 if opt_point.point not in in_path_dic:
                     points_optimized.append(PathPoint(Point_2(opt_point.point[2*i],opt_point.point[2*i+1])))
                     in_path_dic[opt_point.point] = True
-            print("OPTIMIZED:")
-            self._print_angles(points_optimized)
+
             path_optimized = Path(points_optimized)
             path_collection.add_robot_path(robot, path)
             path_collection_optimized.add_robot_path(robot,path_optimized)

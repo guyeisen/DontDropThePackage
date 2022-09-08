@@ -30,8 +30,6 @@ def get_max_distance_and_index(points:List[PathPoint]):
             max_distance = distance
             max_index = i
     max_distance = math.sqrt(max_distance)
-    # print(f"max_distance: {max_distance}")
-    # print(f"segment length: {math.sqrt(segment.squared_length().to_double())}")
     return max_index, max_distance
 
 def validate_points(points:List[PathPoint],collision_detector):
@@ -55,7 +53,6 @@ def dive_deeper(points:List[PathPoint], max_index:int, collision_detector):
 
     mid = douglas_peuker([reduced_left[-1], points[max_index], reduced_right[1]], collision_detector)
     if len(mid) == 2:#means it got reduced
-        print(f"mid is len 2")
         if validate_points(mid, collision_detector):
             return reduced_left + reduced_right[1:]
     return reduced_left + reduced_right
@@ -69,12 +66,8 @@ def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.3):
     recursive function
     """
     from smooth_path import get_circle
-
-    # print(f"I GOT HERE DOUGLAS ")
     if len(points) < 3:
-        print([p.location for p in points])
         return points
-    # print(f"len(points) = {len(points)}")
 
     max_index, max_distance = get_max_distance_and_index(points)
 
@@ -82,30 +75,16 @@ def douglas_peuker(points:List[PathPoint],collision_detector, epsilon=0.3):
         if len(points) == 3:
             return points
         result = dive_deeper(points, max_index, collision_detector)
-        print([p.location for p in result])
         return result
 
     else:
         segment = get_segment(points)
         if collision_detector.is_edge_valid(segment):
-            print(f"removed {len(points)-2} points")
-            print([points[0].location,points[-1].location])
             return [points[0],points[-1]]
         else:
-            if len(points)==3:
-                print(f"I GOT A THREE THAT I WANT BUT CANT SMOOTHEN!. problematic: {points[1].location}")
-                radius = math.sqrt(
-                get_circle(points[0].location, points[1].location, points[2].location).squared_radius().to_double())
-                get_max_distance_and_index(points)
-                print(f"RADIUS IS {radius}m")
-                # if radius > 9:
-                #     print(f"RADIUS IS {radius}m SMOOTHING WITH FORCE:")
-                #     return [points[0],points[-1]]
-                print([p.location for p in points])
+            if len(points) == 3:#means there's 3 points that needed to be smoothen but collisioin blocks that
                 return points
-            print("wanted to remove but it was intersecting, performing another recursion")
             result = dive_deeper(points,max_index, collision_detector)
-            print([p.location for p in result])
             return result
 
 
@@ -395,12 +374,9 @@ def add_optimal_middle_speeds(robot_path, max_linear_acceleration, min_linear_de
 
 # ------------------------------- parse_path2: -------------------------------------------
 def parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration, max_centripetal_acceleration):
-    from smooth_path import get_angle_of_point
     """ assume path is list of segments and circles that connect each segment to the other
         speed/acceleration should be determined afterwards!
         """
-
-    # print_smooth_path(smooth_path)  # todo del
 
     # add first seg_sec:
     first_seg_sec = PathSection(smooth_path[0])
@@ -422,29 +398,13 @@ def parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration, m
     last_seg_sec.speed_end = 0
     update_linear_acceleration(last_seg_sec)
 
-    # print("\nafter loop1:") # todo del
-    # print_robot_path(robot_path) # todo del
-
     # loop2 - fix linear accelerations:
     fix_linear_accelerations(robot_path, max_linear_acceleration)
-
-    # print("\nafter loop2 - acceleration fix:") # todo del
-    # print_robot_path(robot_path) # todo del
 
     # loop3 - fix linear decelerations:
     fix_linear_decelerations(robot_path, min_linear_deceleration)
 
-    # print("\nafter loop3 - deceleration fix:") # todo del
-    # print_robot_path(robot_path) # todo del
-
     # loop4 - add optimal middle speeds:
     add_optimal_middle_speeds(robot_path, max_linear_acceleration, min_linear_deceleration)
-
-    # print("\nafter loop4 - adding mid speeds:") # todo del
-    # print_robot_path(robot_path) # todo del
-
-    # todo del:
-    print_smooth_path(smooth_path) # todo del
-    print_robot_path(robot_path) # todo del
 
     return robot_path

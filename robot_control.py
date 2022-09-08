@@ -47,15 +47,6 @@ class RobotControl:
         """runs the given path"""
         speed= 0.3
         for section in path:
-            # if section.speed_end > 5 or section.speed_start > 5:
-            #     print(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT. STOPPING")
-            #     self.stop()
-            #     return
-            # if section.isCircle and section.radius > 5:
-            #     print(f"radius seems weired: {section.radius} meters. STOPPING. CHECK DOUGLAS!")
-            #     self.stop()
-            #     return
-                #raise Exception(f"TRIED TO MOVE IN SPEED: {section.speed_start}--> {section.speed_end} I WONT ALLOW IT")
             if section.is_first_movement:
                 self.rotate(section.angle_end)
             if section.isCircle:
@@ -125,44 +116,21 @@ class RobotControl:
             speeds = [start_speed for i in range(intervals)]
         else:
             S = np.linspace(start=func(start_speed), stop=func(end_speed), num=int(intervals))
-            #print(S)
+
             speeds = [oposite_func(s) for s in S]
-        #print(speeds)
-        # if end_speed == 0:
-        #     proportion = 1
+
         proportion=1
         for i, s in enumerate(speeds):
             if s==0:
                 continue
             rpm = speed_to_rpm(s)
             t = distance*proportion/(intervals*s)
-            #print(f"rpm: {rpm} for {t}s")
             if i == len(speeds) - 1:
                 self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm,timeout=t,prevent_stop_factor=1 )
             else:
                 self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm,timeout=t,prevent_stop_factor=1)
-        # if proportion!=1 and s!=0:#not sure about this
-        #     t = distance * (1 - proportion) / s
-        #     self.drive_rpm(w1=rpm, w2=rpm, w3=rpm, w4=rpm, timeout=t, prevent_stop_factor=1)
 
 
-
-    # def begin_slowly_to_speed(self,speed, intervals=20, in_time=5):
-    #     #TODO use the upper function
-    #         """slowly increase speed to the wanted speed"""
-    #         top_rpm = speed_to_rpm(speed)
-    #         X = np.linspace(start=0, stop=top_rpm**2, num=int(intervals))
-    #         rpms = [math.sqrt(rpm) for rpm in X]
-    #         for i,rpm in enumerate(rpms):
-    #             print(f" rpm is {rpm} for {in_time/intervals}s")
-    #             print(i)
-    #             self.ep_chassis.drive_wheels(w1=rpm, w2=rpm, w3=rpm, w4=rpm, timeout=in_time/intervals)
-    #             if i!= len(rpms)-1:
-    #                 print(i)
-    #                 time.sleep(in_time/intervals)
-    #             else:
-    #                 time.sleep(0.9*in_time/intervals)
-    #         #time.sleep(1)
 
     def rotate(self,theta):
 
@@ -172,6 +140,8 @@ class RobotControl:
         self.ep_chassis.drive_wheels(w1=sign * 100/3, w2=sign * (-100)/3, w3=sign * (-100)/3, w4=sign * (100)/3,
                                      timeout=sign * t_theta_s100)  # 180 deg
         time.sleep(sign * t_theta_s100)
+
+
     def move_straight_exact(self, distance, speed=0.5):
         """distance is in meters
             speed in m/s """
@@ -181,6 +151,7 @@ class RobotControl:
         print(f"running for {t} sec. rpm is {rpm}")
         self.ep_chassis.drive_wheels(w1=rpm, w2=rpm, w3=rpm, w4=rpm, timeout=t)
         time.sleep(t)
+
 
     def rotate_and_go(self, theta, distance, speed=0.3):
         # speed 100 for all wheels, w1 and w4 are negative

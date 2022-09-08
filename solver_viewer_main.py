@@ -175,7 +175,6 @@ class SolverViewerGUI(Ui_MainWindow):
         self.load_solver(default=True)
         self.solver_dialog.solver_from_file(default=True)
         self.solver_dialog.choose_solver()
-        #self.solve()
 
 
     def verify_paths(self):
@@ -307,7 +306,7 @@ class SolverViewerGUI(Ui_MainWindow):
         """
         from main import parse_and_run
 
-        if self.smooth_path:
+        if self.paths_created:
             parse_and_run(self.smooth_path)
 
 
@@ -488,12 +487,9 @@ class SolverViewerGUI(Ui_MainWindow):
         collision_detector: ObjectCollisionDetection = prm.collision_detection[robot]
         path_after_douglas = douglas_peuker(self.paths_optimized.paths[robot].points, collision_detector)
         self.paths_optimized.paths[robot].points = path_after_douglas
-        print([point.location for point in  self.paths_optimized.paths[robot].points])
         self.smooth_path = get_smooth_path(self, use_cd=True)
-        #self.add_smooth_path_to_scene()
         self.toggle_paths(True)
         self.paths_created = True
-        #finished(self.smooth_path)
         self.toolBar.setEnabled(True)
         finished_solving(self.paths_created, self.writer)
 

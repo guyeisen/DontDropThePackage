@@ -15,11 +15,6 @@ from robot_control import *
 from discopygal.bindings import Point_2
 from discopygal.bindings import *
 
-
-from discopygal.solvers import SceneDrawer
-from discopygal.solvers import Scene
-from discopygal.solvers import Solver
-
 from smooth_path import get_angle_of_point
 from solver_viewer_main import SolverViewerGUI
 
@@ -31,105 +26,6 @@ class EnviromentConfigurations:
         self.app = QtWidgets.QApplication(sys.argv)
         self.gui = SolverViewerGUI()
         self.gui.solve()
-        # self.gui.toggle_paths()
-
-        #self.mygui = SolverViewerGUI()
-        # self.path_edges = []
-        # self.path_vertices = []
-        # self.writer = None
-        # self.discopygal_scene = Scene()
-        # self.scene_path = ""
-
-        # self.paths = None
-        # # Setup solver
-        # self.solver_class = None
-        # #self.load_solver()
-        # self.solver_graph = None
-        # self.solver_arrangement = None
-        # self.solver_graph_vertices = [] # gui
-        # self.solver_graph_edges = [] # gui
-        #self.execute_defaults()
-
-
-
-    def execute_defaults(self):
-        self.gui.mainWindow.show()
-        self.load_scene()
-        self.solver_from_file()
-        self.gui.solve()#############was without gui,
-        self.gui.toggle_paths()
-
-
-    def load_scene(self):
-        """
-        Load default scene.
-        """
-        with open(DEFAULT_SCENE, 'r') as fp:
-            d = json.load(fp)
-        self.gui.discopygal_scene = Scene.from_dict(d)
-        scene_drawer = SceneDrawer(self.gui, self.gui.discopygal_scene)
-        scene_drawer.draw_scene()
-        self.clear_paths()
-
-
-    def clear_paths(self):
-        pass
-
-
-    def get_solver_args(self):
-        """
-        Extract a dict from the dynamically generated GUI arguments (to pass to the solver)
-        """
-        args = {}
-        solver_args = self.solver_class.get_arguments()
-        for arg in solver_args:
-            _, _, ttype = solver_args[arg]
-            args[arg] = ttype(solver_args[arg][1])
-        return args
-
-    # def solve_thread(self):
-    #     """
-    #     The thread that is run by the "solve" function"
-    #     """
-    #     solver_args = self.get_solver_args()
-    #     #solver.set_verbose(self.writer)
-    #     solver = self.solver_class.from_arguments(solver_args)
-    #     solver.load_scene(self.gui.discopygal_scene)
-    #     self.gui.paths = solver.solve()
-    #     self.gui.solver_graph = solver.get_graph()
-    #     self.gui.solver_arrangement = solver.get_arrangement()
-
-    # def solver_from_file(self):
-    #     """
-    #     Loads the solver
-    #     """
-    #     path = "prm.py"
-    #     try:
-    #         spec = importlib.util.spec_from_file_location(path, path)
-    #         module = importlib.util.module_from_spec(spec)
-    #         spec.loader.exec_module(module)
-    #         cnt = 0
-    #         for obj_name in dir(module):
-    #             obj = getattr(module, obj_name)
-    #             if isclass(obj) and issubclass(obj, Solver) and obj_name != "Solver":
-    #                 self.solver_class = obj
-    #                 globals()[obj_name] = obj
-    #                 cnt += 1
-    #     except Exception as e:
-    #         print("Could not import module", repr(e))
-
-
-    # def solve(self):
-    #     """
-    #     This method is called by the solve button.
-    #     Run the MP solver in parallel to the app.
-    #     """
-    #     if self.solver_class is None:
-    #         print("self.solver_class is None")
-    #         return
-    #     self.solve_thread()
-
-
 
 
 
@@ -155,11 +51,7 @@ class RobotPath:
         dy = p2.y() - p1.y()
         return Direction_2(dx, dy)
 
-    def gen_robot_path_from_points(self):
-        #robot_path = optimize_path(points) #CHECK WITH AVIGAIL WHAT IM GETTING BACK. ASSUMING list of points, each telling me what they represent (start/end of segment or arc)
-        #robot_path = self.points
-        #self.points[0].location.x().to_double()
-        #Ray_2(self.points[0].location, Direction_2(self.points[0].location.x(),self.points[0].location.y()))
+    def gen_robot_path_from_points(self):#LEGACY DONT USE
         print(f"Calculated {len(self.points)} points")
         self.rays = [Ker.Ray_2(self.points[i].location, self._get_Direction_2(self.points[i].location, self.points[i + 1].location)) for i in range(len(self.points) - 1)]
         return parse_path(self.rays, self.points[len(self.points)-1].location)
@@ -172,7 +64,7 @@ def to_degrees(rad):
     return 180 * rad / math.pi
 
 
-def parse_path(rays: [Ker.Ray_2], last_point: Point_2):
+def parse_path(rays: [Ker.Ray_2], last_point: Point_2):#LEGACY DONT USE
     """
     returns list of tuples: (starting angle, distance)
                     (p1)
@@ -193,10 +85,8 @@ def parse_path(rays: [Ker.Ray_2], last_point: Point_2):
         p1[1]= rays[i].source().y().to_double()
         p2[0] = rays[i + 1].source().x().to_double()
         p2[1] = rays[i + 1].source().y().to_double()
-        #if p2[0]
         prev_distance = np.linalg.norm(p1-p0)
         curr_distance = np.linalg.norm(p2-p1)
-        #time_for_seg = time_per_length(distance)
         angle1 = _calc_angle_rad_fromDirection(rays[i].direction())
         angle0 = _calc_angle_rad_fromDirection(rays[i - 1].direction())
         angle = min(angle1 - angle0, np.pi - (angle1 - angle0))
@@ -218,15 +108,7 @@ def parse_path(rays: [Ker.Ray_2], last_point: Point_2):
     return angle_distance_list
 
 
-
-def generate_path(env, pointA, pointB):
-    """
-    given the enviroment produces path from pointA to pointB
-    """
-    pass
-
-
-def run_path(control: RobotControl, path):
+def run_path(control: RobotControl, path): #LEGACY DONT USE
     for angle, distance in path:
         print(f'Angle: {angle}, Distance: {distance}')
         control.rotate_and_go(angle, distance)
@@ -249,7 +131,6 @@ def get_robot():
         except Exception as e:
             print("GOT ERROR CONNECTING, TRYING AGAIN")
     print("ROBOT CONNECTED")
-    #time.sleep(10)
     return control
 
 def testings(control):
@@ -259,9 +140,7 @@ def testings(control):
     control.move_straight_exact(distance=2,speed=0.6)
     control.begin_slowly_to_speed(speed=0.6)
     control.move_straight_exact(distance=0.6, speed=0.5)
-
     slalum(control, speed=0.3)
-
     control.move_circ_2(R=1,speed=0.5,alpha=0)
     control.begin_slowly_to_speed(0.3)
     control.ep_chassis.drive_wheels(w1=60, w2=60, w3=60, w4=60, timeout=5)
@@ -314,6 +193,7 @@ def replace_path_for_simple_scene(env): # todo temp delete
         path_point.location = my_points[i]
     path.points = path.points[:4]
 
+
 def print_smooth_path(smooth_path):
     print("\nsmooth path: ")
     for i in range(len(smooth_path)):
@@ -331,50 +211,15 @@ def print_smooth_path(smooth_path):
             print(f"seg_{i} -- {seg}\n")
 
 def robot_tests(control):
-    speed = 0.3
-    end_speed = 0.0
-    R = 0.3
-    theta = 90
-    #control.rotate(theta)
     control.glide_smoothly(start_speed=0.0, end_speed=0.5, distance=3.6, func=lambda x: x, oposite_func=lambda x: x)
     control.stop()
-    # control.glide_smoothly(start_speed=0.0, end_speed=1.5, distance=5, func=math.exp, oposite_func=math.log)
-    # control.move_circle_Husband(speed=speed, R=R, theta=0.5* math.pi, circle_orient=Ker.CLOCKWISE,should_stop=True)
-    # control.glide_smoothly(start_speed=speed, end_speed=end_speed, distance=0.2, func=lambda x: x, oposite_func=lambda x: x,intervals=7)
-    #control.move_straight_exact(distance=1, speed=end_speed)
-    # control.move_straight_exact(distance=2, speed=0.6)
-    # control.begin_slowly_to_speed(speed=0.6)
-    # control.move_straight_exact(distance=0.6, speed=0.5)
     end_robot(control)
 
-def path_found(control):
-    control.ep_led.set_led(comp=led.COMP_ALL, r=60, g=0, b=60, effect=led.EFFECT_ON)
-# -------------------------------------------- main: -------------------------------------------------------
+
 def finished_solving(path_created=True, writer=None):
     if writer is not None:
         print("Hurray I'm ready to run! Click Play!",file=writer)
-    # control: RobotControl = get_robot()
-    # if not path_created:
-    #     robot_path_not_found(control)
-    #     return
-    # else:
-    #     path_found(control)
-    #     return
 
-    # robot_tests(control)
-
-    # --- robots max accelerations from empiric calculations: -- todo del
-    # empiric_start_speed = 0.9
-    # empiric_end_speed = 0.1
-    # empiric_seg_len = 0.2
-    # min_linear_deceleration = ((empiric_end_speed**2) - (empiric_start_speed**2)) / (2 * empiric_seg_len)
-    # max_linear_acceleration = -min_linear_deceleration
-    #
-    # empiric_v = 0.5
-    # empiric_r = 0.6
-    # max_centripetal_acceleration = (empiric_v ** 2) / empiric_r
-
-    # --- robots max accelerations: --
 
 def parse_and_run(smooth_path):
     control: RobotControl = get_robot()
@@ -384,19 +229,15 @@ def parse_and_run(smooth_path):
 
     path_for_robot = parse_path2(smooth_path, max_linear_acceleration, min_linear_deceleration,
                                  max_centripetal_acceleration)
-    time.sleep(10)
+
     control.run_path(path_for_robot)
     end_robot(control)
 
+# -------------------------------------------- main: -------------------------------------------------------
 
 if __name__ == '__main__':
     try:
         env = EnviromentConfigurations()
-
-        # replace_path_with_my_path(path) # todo temp delete
-        # replace_path_for_simple_scene(env) # todo temp delete
-
-        # print_smooth_path() # todo temp delete
 
         env.gui.mainWindow.show()
 
