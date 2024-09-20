@@ -25,7 +25,7 @@ def dis(p1, p2):
 
 # ---------------------------- get_angle: -------------------------------------
 def get_angle(p1, p2, p3):
-    """ Returns the angke between the three points, using the definition of dot product. """
+    """ Returns the angle between the three points, using the definition of dot product. """
 
     x1 = p1.x().to_double()
     x2 = p2.x().to_double()
@@ -51,7 +51,7 @@ def get_arc_source_and_target(p1, p2, p3):
 
     shorter_s = s1 if s1.squared_length() < s2.squared_length() else s2 # the shorter segment
     len_shorter_s = math.sqrt(shorter_s.squared_length().to_double())
-    longer_s = s2 if s1.squared_length() < s2.squared_length() else s1  # the shorter segment
+    longer_s = s2 if s1.squared_length() < s2.squared_length() else s1  # the longer segment
     if longer_s == s1:
         longer_s_ray = Ray_2(p2, longer_s.source())
     else:
@@ -95,7 +95,7 @@ def get_angle_of_point(circle, point):
     return alpha
 
 
-# ------------------------ grt point on ray: -------------------------------------
+# ------------------------ get point on ray: -------------------------------------
 def get_point_on_ray(ray, distance):
     """ return a point in a given distance from the beginning of a given ray. """
     source = ray.source()
@@ -122,7 +122,7 @@ def get_point_on_ray(ray, distance):
 
 # ---------------------------- get_circle: -------------------------------------
 def get_circle(p1, p2, p3):
-    """ Return a circle that is tangent to segments p1-p2 and p2-p3 at the closer print out of p1 and p2"""
+    """ Return a circle that is tangent to segments p1-p2 and p2-p3 at the closer point out of p1 and p3"""
     x1 = p1.x().to_double()
     x2 = p2.x().to_double()
     x3 = p3.x().to_double()
